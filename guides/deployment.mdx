@@ -1,0 +1,270 @@
+---
+title: Deploying to Production
+description: Step-by-step guide to deploying your Guigolo portfolio to Vercel with proper configuration
+---
+
+## Deploying to Vercel
+
+Vercel is the recommended platform for deploying Guigolo. Follow these steps for a smooth deployment.
+
+<Steps>
+  <Step title="Prepare your repository">
+    Ensure your code is pushed to a Git repository (GitHub, GitLab, or Bitbucket).
+    
+    ```bash
+    git add .
+    git commit -m "Prepare for deployment"
+    git push origin main
+    ```
+  </Step>
+  
+  <Step title="Import to Vercel">
+    1. Go to [vercel.com](https://vercel.com) and sign in
+    2. Click "Add New Project"
+    3. Import your Git repository
+    4. Vercel will auto-detect Next.js settings
+  </Step>
+  
+  <Step title="Configure environment variables">
+    Add your analytics environment variables in the Vercel dashboard:
+    
+    - `NEXT_PUBLIC_GA_ID` - Your Google Analytics measurement ID
+    - `NEXT_PUBLIC_HJ_ID` - Your Hotjar site ID
+    - `NEXT_PUBLIC_HJ_SV` - Hotjar script version (default: `6`)
+    
+    See the [Analytics Guide](/guides/analytics) for details on obtaining these IDs.
+  </Step>
+  
+  <Step title="Deploy">
+    Click "Deploy" and wait for the build to complete. Vercel will provide a deployment URL.
+  </Step>
+  
+  <Step title="Verify deployment">
+    Visit your deployment URL and check that:
+    - All pages load correctly
+    - Images display properly
+    - Analytics scripts load (check browser console)
+    - Redirects work as expected
+  </Step>
+</Steps>
+
+## Environment Variables Setup
+
+Guigolo uses environment variables for analytics services. These are loaded in `app/layout.tsx:81-86`.
+
+### Required Variables
+
+| Variable | Purpose | Where to Get It |
+|----------|---------|----------------|
+| `NEXT_PUBLIC_GA_ID` | Google Analytics tracking | [Google Analytics](https://analytics.google.com) - Admin → Data Streams |
+| `NEXT_PUBLIC_HJ_ID` | Hotjar site identifier | [Hotjar](https://www.hotjar.com) - Sites & Organizations |
+| `NEXT_PUBLIC_HJ_SV` | Hotjar script version | Usually `6` (optional, has default) |
+
+### Adding Variables in Vercel
+
+<Steps>
+  <Step title="Open project settings">
+    In your Vercel dashboard, go to your project → Settings → Environment Variables
+  </Step>
+  
+  <Step title="Add each variable">
+    For each variable:
+    1. Enter the variable name (e.g., `NEXT_PUBLIC_GA_ID`)
+    2. Enter the value
+    3. Select environments: Production, Preview, Development
+    4. Click "Save"
+  </Step>
+  
+  <Step title="Redeploy">
+    After adding variables, trigger a new deployment to apply them.
+  </Step>
+</Steps>
+
+<Note>
+Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser and can be used in client-side code. Never store secrets in these variables.
+</Note>
+
+### Production-Only Loading
+
+Analytics scripts only load in production to avoid tracking development traffic:
+
+```tsx app/layout.tsx
+const isProd = process.env.VERCEL_ENV === "production";
+
+{isProd && GA_ID ? (
+  // Google Analytics loads only in production
+) : null}
+```
+
+## Domain Configuration
+
+### Adding a Custom Domain
+
+<Steps>
+  <Step title="Add domain in Vercel">
+    1. Go to your project → Settings → Domains
+    2. Enter your domain name
+    3. Click "Add"
+  </Step>
+  
+  <Step title="Configure DNS">
+    Vercel will provide DNS records to add at your domain registrar:
+    
+    **For apex domain (example.com):**
+    ```
+    Type: A
+    Name: @
+    Value: 76.76.21.21
+    ```
+    
+    **For www subdomain:**
+    ```
+    Type: CNAME
+    Name: www
+    Value: cname.vercel-dns.com
+    ```
+  </Step>
+  
+  <Step title="Wait for verification">
+    DNS propagation can take up to 48 hours, but usually completes within minutes to a few hours.
+  </Step>
+  
+  <Step title="Update metadata base">
+    Update your metadata base URL in `app/layout.tsx:22`:
+    
+    ```tsx
+    metadataBase: new URL("https://yourdomain.com"),
+    ```
+  </Step>
+</Steps>
+
+### SSL Certificate
+
+Vercel automatically provisions and renews SSL certificates for all domains. No action needed.
+
+## Redirect Configuration
+
+Guigolo includes extensive redirect rules in `next.config.ts:4-197` for tracking traffic sources.
+
+### How Redirects Work
+
+The configuration creates short URLs that redirect to your home page with UTM parameters:
+
+```ts next.config.ts
+{
+  source: '/go/linkedin',
+  destination: '/?utm_source=linkedin&utm_medium=profile&utm_campaign=profile_referral',
+  permanent: false,
+}
+```
+
+Use these short URLs in your social media profiles:
+- `yoursite.com/go/linkedin` - LinkedIn profile
+- `yoursite.com/go/github` - GitHub profile
+- `yoursite.com/go/figma` - Figma profile
+- And many more...
+
+### Adding Custom Redirects
+
+Add new redirects to the array in `next.config.ts`:
+
+```ts next.config.ts
+async redirects() {
+  return [
+    // Existing redirects...
+    {
+      source: '/go/yourplatform',
+      destination: '/?utm_source=yourplatform&utm_medium=bio&utm_campaign=your_campaign',
+      permanent: false,
+    },
+  ]
+}
+```
+
+<Tip>
+Use `permanent: false` for temporary redirects (302) and `permanent: true` for permanent redirects (301). Temporary redirects are better for tracking links you might change later.
+</Tip>
+
+### Tracking Redirect Performance
+
+All redirects include UTM parameters that are tracked by Google Analytics. You can see which platforms drive traffic in your Analytics dashboard under:
+
+**Acquisition → Traffic Acquisition → Source / Medium**
+
+## Build Optimization
+
+### Image Optimization
+
+Next.js automatically optimizes images. For best results:
+
+- Use the `<Image>` component from `next/image`
+- Provide `width` and `height` props
+- Use WebP or AVIF format when possible
+- Store images in `/public` directory
+
+### Bundle Analysis
+
+Analyze your bundle size before deploying:
+
+```bash
+npm install @next/bundle-analyzer
+```
+
+Update `next.config.ts`:
+
+```ts
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
+
+module.exports = withBundleAnalyzer(nextConfig)
+```
+
+Run analysis:
+
+```bash
+ANALYZE=true npm run build
+```
+
+### Performance Checklist
+
+- ✅ Images are optimized and properly sized
+- ✅ Fonts are preloaded and optimized
+- ✅ Analytics scripts load with `afterInteractive` strategy
+- ✅ No console errors in production build
+- ✅ Lighthouse score above 90 for performance
+
+## Continuous Deployment
+
+Vercel automatically deploys your site when you push to your repository:
+
+- **Production**: Pushes to `main` branch deploy to production
+- **Preview**: Pushes to other branches create preview deployments
+- **Comments**: Preview URLs are commented on pull requests
+
+<Note>
+Preview deployments include all environment variables marked for "Preview" environment, allowing you to test analytics and other features before going live.
+</Note>
+
+## Troubleshooting
+
+### Build Fails
+
+1. Check the Vercel build logs for errors
+2. Run `npm run build` locally to reproduce
+3. Ensure all dependencies are in `package.json`
+4. Verify Node.js version compatibility
+
+### Environment Variables Not Working
+
+1. Verify variable names start with `NEXT_PUBLIC_` for client-side code
+2. Check that variables are added to correct environment (Production/Preview)
+3. Redeploy after adding new variables
+4. Check browser console for the actual values loaded
+
+### Redirects Not Working
+
+1. Verify syntax in `next.config.ts`
+2. Clear browser cache
+3. Test in incognito/private mode
+4. Check Vercel function logs

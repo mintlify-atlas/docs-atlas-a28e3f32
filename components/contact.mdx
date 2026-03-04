@@ -1,0 +1,370 @@
+---
+title: Contact Component
+description: Form component with Formspree integration, gamification triggers, origin tracking, and smart scroll lock detection
+---
+
+## Overview
+
+The `Contact` component provides:
+
+- Form submission via Formspree
+- Origin tracking (where user came from)
+- Gamification achievement unlocks
+- Smart user intent detection (anti-autoscroll)
+- Session persistence for success state
+- Error handling with retry options
+
+## File Location
+
+```
+~/workspace/source/components/Contact.tsx
+```
+
+## Configuration
+
+```tsx
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xpqqzvro";
+```
+
+## State Management
+
+```tsx
+type Status = "idle" | "sending" | "success" | "error";
+
+const [status, setStatus] = useState<Status>("idle");
+const [origin, setOrigin] = useState<ContactOrigin | null>(null);
+const formRef = useRef<HTMLFormElement | null>(null);
+```
+
+## Form Fields
+
+### Visible Fields
+
+```tsx
+<form onSubmit={onSubmit}>
+  {/* Name */}
+  <input
+    name="name"
+    required
+    placeholder="Tu nombre"
+    className="w-full rounded-md border border-neutral-white/10 bg-neutral-black-900/60 px-4 py-3 text-neutral-white outline-none focus:border-accent-lilac/60"
+  />
+
+  {/* Email */}
+  <input
+    type="email"
+    name="email"
+    required
+    placeholder="tu@email.com"
+  />
+
+  {/* Message */}
+  <textarea
+    name="message"
+    required
+    rows={5}
+    placeholder="Qué estás construyendo y qué necesitas de mí…"
+    onChange={(e) => {
+      if (e.target.value.trim().length >= COURAGE_MIN_CHARS) {
+        markCourage();
+      }
+    }}
+  />
+</form>
+```
+
+### Hidden Fields (Tracking)
+
+```tsx
+{/* Honeypot for spam prevention */}
+<input type="text" name="_gotcha" className="hidden" />
+
+{/* Origin tracking */}
+<input type="hidden" name="origin_path" value={origin?.fromPath ?? ""} />
+<input type="hidden" name="origin_hash" value={origin?.fromHash ?? ""} />
+<input type="hidden" name="origin_scrollY" value={origin ? String(origin.fromScrollY) : ""} />
+<input type="hidden" name="origin_cta" value={origin?.ctaId ?? ""} />
+```
+
+## Origin Tracking
+
+Tracks where the user navigated from:
+
+```tsx
+import {
+  readContactOrigin,
+  clearContactOrigin,
+  type ContactOrigin,
+} from "@/components/ui/contactOrigin";
+
+useEffect(() => {
+  setOrigin(readContactOrigin());
+
+  // Restore success state if previously submitted
+  const sent = sessionStorage.getItem("contact_sent_v1");
+  if (sent === "1") setStatus("success");
+}, []);
+```
+
+## Form Submission
+
+```tsx
+async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  if (status === "sending") return;
+
+  setStatus("sending");
+
+  const form = e.currentTarget;
+  const formData = new FormData(form);
+
+  try {
+    const res = await fetch(FORMSPREE_ENDPOINT, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: formData,
+    });
+
+    if (res.ok) {
+      // Unlock achievements
+      unlockAchievement("first_contact");
+      completeMission("mission_contact");
+      
+      // Reset form
+      form.reset();
+      
+      // Persist success state
+      sessionStorage.setItem("contact_sent_v1", "1");
+      setStatus("success");
+    } else {
+      setStatus("error");
+    }
+  } catch {
+    setStatus("error");
+  }
+}
+```
+
+## Gamification Triggers
+
+### Achievement: "almost_talked"
+
+Unlocked when user views the contact section with intent:
+
+```tsx
+const almostUnlockedRef = useRef(false);
+const humanIntentRef = useRef(false);
+const dwellTimerRef = useRef<number | null>(null);
+
+useEffect(() => {
+  const el = document.getElementById("contacto");
+  if (!el) return;
+
+  const markIntent = () => {
+    humanIntentRef.current = true;
+  };
+
+  // Track human intent
+  el.addEventListener("wheel", markIntent, { passive: true });
+  el.addEventListener("touchmove", markIntent, { passive: true });
+  el.addEventListener("pointerdown", markIntent, { passive: true });
+  el.addEventListener("keydown", markIntent);
+
+  // IntersectionObserver
+  const io = new IntersectionObserver(
+    (entries) => {
+      const visible = entries[0]?.isIntersecting;
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      const DWELL_MS = isMobile ? 2400 : 1400;
+
+      if (!visible) {
+        clearDwell();
+        resetIntent();
+        return;
+      }
+
+      if (almostUnlockedRef.current) return;
+
+      // Start dwell timer
+      dwellTimerRef.current = window.setTimeout(() => {
+        if (humanIntentRef.current) {
+          almostUnlockedRef.current = true;
+          unlockAchievement("almost_talked");
+        }
+      }, DWELL_MS);
+    },
+    { threshold: 0.6 }
+  );
+
+  io.observe(el);
+
+  return () => {
+    clearDwell();
+    removeIntentListeners();
+    io.disconnect();
+  };
+}, []);
+```
+
+### Achievement: "took_courage"
+
+Unlocked when user writes 50+ characters:
+
+```tsx
+const COURAGE_MIN_CHARS = 50;
+const courageUnlockedRef = useRef(false);
+
+const markCourage = () => {
+  if (courageUnlockedRef.current) return;
+  courageUnlockedRef.current = true;
+  unlockAchievement("took_courage");
+};
+
+<textarea
+  onChange={(e) => {
+    if (e.target.value.trim().length >= COURAGE_MIN_CHARS) {
+      markCourage();
+    }
+  }}
+/>
+```
+
+### Achievement: "first_contact"
+
+Unlocked on successful submission (see form submission above).
+
+## Success State
+
+```tsx
+{status === "success" && (
+  <div className="mt-10 max-w-2xl rounded-md border border-neutral-white/10 bg-accent-cyan-10 px-4 py-4">
+    <div className="text-neutral-white/90">
+      Listo ✅ Ya me llegó tu mensaje. Te escribo pronto 💝
+    </div>
+
+    <div className="mt-2 text-sm text-neutral-white/70">
+      Si quieres, puedes seguir explorando o enviar otro mensaje.
+    </div>
+
+    <div className="mt-4 flex flex-wrap gap-3">
+      <button
+        onClick={() => {
+          clearContactOrigin();
+          window.location.href = "/#projects";
+        }}
+      >
+        Seguir explorando
+      </button>
+
+      <button
+        onClick={() => {
+          setStatus("idle");
+          formRef.current?.reset();
+          sessionStorage.removeItem("contact_sent_v1");
+        }}
+      >
+        Enviar otro mensaje
+      </button>
+    </div>
+  </div>
+)}
+```
+
+## Error State
+
+```tsx
+{status === "error" && (
+  <div className="mt-10 max-w-2xl rounded-md border border-neutral-white/10 bg-neutral-black-900/60 px-4 py-4">
+    <div>
+      Algo falló 😅 Intenta otra vez o escríbeme directo por email:{" "}
+      <a
+        className="underline decoration-neutral-white/20 hover:decoration-neutral-white/50"
+        href="mailto:info@guigolo.com"
+      >
+        info@guigolo.com
+      </a>
+    </div>
+
+    <div className="mt-4 flex flex-wrap gap-3">
+      <button onClick={goBackToOrigin}>Volver a donde estaba</button>
+      <button onClick={() => window.location.href = "/#projects"}>
+        Seguir explorando
+      </button>
+      <button onClick={() => setStatus("idle")}>Reintentar aquí</button>
+    </div>
+  </div>
+)}
+```
+
+## Back to Origin Navigation
+
+```tsx
+const goBackToOrigin = () => {
+  const o = readContactOrigin();
+  if (!o) return;
+
+  const url = `${o.fromPath}${o.fromHash || ""}`;
+  sessionStorage.setItem("restore_scroll_once_v1", "1");
+  window.location.href = url;
+};
+```
+
+## Section Wrapper
+
+```tsx
+import Section from "./Section";
+
+<Section className="py-24 bg-neutral-black-900">
+  <div
+    id="contacto"
+    className="scroll-mt-28 rounded-2xl border border-neutral-white/10 bg-neutral-black-800/40 p-10"
+  >
+    {/* Form content */}
+  </div>
+</Section>
+```
+
+## Submit Button
+
+```tsx
+<button
+  type="submit"
+  disabled={status === "sending"}
+  className="mt-2 inline-flex w-fit items-center justify-center rounded-md bg-accent-lilac px-7 py-3 font-medium text-neutral-white hover:opacity-90 transition disabled:opacity-60"
+>
+  {status === "sending" ? "Enviando…" : "Enviar mensaje →"}
+</button>
+```
+
+## Usage Example
+
+```tsx
+import Contact from "@/components/Contact";
+
+export default function HomePage() {
+  return (
+    <main>
+      {/* Other sections */}
+      <Contact />
+    </main>
+  );
+}
+```
+
+## Key Features Summary
+
+| Feature | Description |
+|---------|-------------|
+| **Formspree** | Third-party form handling |
+| **Origin tracking** | Tracks CTA source and scroll position |
+| **Gamification** | 3 unlockable achievements |
+| **Intent detection** | Anti-autoscroll using dwell time + human interaction |
+| **Session persistence** | Success state survives page refresh |
+| **Error recovery** | Multiple retry options with helpful messaging |
+
+## Dependencies
+
+- `@/components/Section` - Layout wrapper
+- `@/components/ui/contactOrigin` - Origin tracking utilities
+- `@/components/gamification/achievementsStore` - Achievement system
+- `@/components/gamification/missionsStore` - Mission system

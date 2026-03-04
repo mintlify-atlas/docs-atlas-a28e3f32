@@ -1,0 +1,806 @@
+---
+title: Gamification System
+description: Deep dive into Guigolo's achievement and mission system - how it tracks user behavior, unlocks rewards, and drives engagement
+---
+
+## Overview
+
+Guigolo features a sophisticated **gamification system** that tracks user interactions and rewards exploration through achievements and missions. Built entirely client-side using localStorage and custom event listeners, the system detects meaningful engagement patterns without server-side tracking.
+
+## Architecture
+
+The gamification system consists of four core modules:
+
+<CardGroup cols={2}>
+  <Card title="Stores" icon="database">
+    `achievementsStore.ts` and `missionsStore.ts` manage localStorage persistence and state mutations.
+  </Card>
+  <Card title="Catalogs" icon="book">
+    `achievementsCatalog.ts` and `missionsCatalog.ts` define metadata for each achievement/mission.
+  </Card>
+  <Card title="Triggers" icon="bolt">
+    `useAchievmentsTrigger.ts` and `useMissionsTrigger.ts` detect user behaviors and unlock rewards.
+  </Card>
+  <Card title="Boot Components" icon="rocket">
+    `Boot.tsx`, `TriggersBoot.tsx`, `MissionsBoot.tsx` initialize the system on page load.
+  </Card>
+</CardGroup>
+
+## System Initialization
+
+The gamification system boots in three phases during page load:
+
+```tsx app/page.tsx
+export default function Home() {
+  return (
+    <main className="bg-neutral-black-900">
+      {/* Phase 1: Initialize achievement tracking */}
+      <GamificationBoot />
+      
+      {/* Phase 2: Start listening for achievement triggers */}
+      <TriggersBoot />
+      
+      {/* Phase 3: Start mission tracking */}
+      <MissionsBoot />
+      
+      {/* Phase 4: Render achievement UI (toasts) */}
+      <AchievementsUI />
+      
+      {/* Rest of the page content */}
+    </main>
+  );
+}
+```
+
+### Boot.tsx: First Contact
+
+```tsx components/gamification/Boot.tsx
+"use client";
+
+import { useEffect } from "react";
+import { trackVisit, unlockAchievement } from "./achievementsStore";
+
+export default function GamificationBoot() {
+  useEffect(() => {
+    // 1. Register visit and check if it's a new day
+    const { isNewDay } = trackVisit();
+
+    // 2. Base achievement (first system interaction)
+    unlockAchievement("first_step");
+
+    // 3. Returning visitor achievement
+    if (isNewDay) {
+      unlockAchievement("visual_match");
+    }
+  }, []);
+
+  return null; // Invisible component
+}
+```
+
+<Note>
+  `Boot.tsx` returns `null` - it's an invisible component that only runs side effects. This pattern keeps initialization logic separate from UI rendering.
+</Note>
+
+### TriggersBoot.tsx: Starting Listeners
+
+```tsx components/gamification/TriggersBoot.tsx
+"use client";
+
+import useAchievementTriggers from "./useAchievmentsTrigger";
+
+export default function TriggersBoot() {
+  useAchievementTriggers({
+    servicesId: "services",
+    projectsId: "projects",
+  });
+
+  return null;
+}
+```
+
+This component activates the achievement trigger system by calling the custom hook with section IDs.
+
+## Achievement System
+
+### Achievement Types
+
+Defined in `achievementsStore.ts:5-20`:
+
+```ts
+export type AchievementId =
+  | "first_step"          // Loaded the site
+  | "explorer"            // Scrolled and read content
+  | "curious"             // (reserved)
+  | "observer"            // (reserved)
+  | "map_complete"        // (reserved)
+  | "services_decoded"    // Interacted with services
+  | "projects_gallery"    // Explored multiple projects
+  | "read_between_lines"  // (reserved)
+  | "critical_thinker"    // (reserved)
+  | "good_eye"            // (reserved)
+  | "curious_player"      // (reserved)
+  | "visual_match"        // Returned on a different day
+  | "almost_talked"       // Reached contact form
+  | "took_courage"        // Started writing message
+  | "first_contact";      // Sent the form
+```
+
+### Achievement Metadata
+
+Each achievement is defined in `achievementsCatalog.ts`:
+
+```ts components/gamification/achievementsCatalog.ts
+export type AchievementMeta = {
+  id: AchievementId;
+  title: string;
+  description: string;
+  icon?: string;
+  howItWorks: {
+    trigger: string;
+    behavior: string;
+    whyItMatters: string;
+  };
+};
+
+export const ACHIEVEMENTS: AchievementMeta[] = [
+  {
+    id: "first_step",
+    title: "Primer paso",
+    description: "Todo empieza con una mirada curiosa. Gracias por estar aquí 💜",
+    icon: "/achievements/first_step.svg",
+    howItWorks: {
+      trigger: "Se activa automáticamente al cargar el sitio por primera vez.",
+      behavior: "Presencia inicial.",
+      whyItMatters: "Marca el punto de entrada al sitio.",
+    },
+  },
+  // ... more achievements
+];
+```
+
+<Accordion title="Example: Services Decoded Achievement">
+  ```ts
+  {
+    id: "services_decoded",
+    title: "Servicios descifrados",
+    description: "No todos leen esto. Tú sí.",
+    icon: "/achievements/services_decoded.svg",
+    howItWorks: {
+      trigger: "Se activa después de interactuar varias veces con las cards de servicios.",
+      behavior: "Búsqueda de entendimiento.",
+      whyItMatters: "Detecta cuando alguien intenta comprender qué ofreces, no solo verlo por encima.",
+    },
+  }
+  ```
+  
+  This achievement unlocks after the user clicks on service accordion items twice, indicating genuine interest rather than accidental interaction.
+</Accordion>
+
+### Achievement Storage
+
+Achievements persist in localStorage with versioned state:
+
+```ts components/gamification/achievementsStore.ts
+type UnlockedEntry = {
+  at: number;   // Timestamp of first unlock
+  count: number; // For accumulative achievements
+};
+
+export type AchievementsStateV1 = {
+  version: 1;
+  unlocked: Partial<Record<AchievementId, UnlockedEntry>>;
+  stats: {
+    visits: number;
+    firstVisitAt: number;
+    lastVisitAt: number;
+    lastSeenDate: string; // YYYY-MM-DD format
+  };
+};
+```
+
+Stored at key: `"guigolo_achievements_v1"`
+
+### Core Achievement Functions
+
+<Tabs>
+  <Tab title="trackVisit">
+    ```ts components/gamification/achievementsStore.ts:100-118
+    export function trackVisit(): { 
+      isNewDay: boolean; 
+      state: AchievementsStateV1 
+    } {
+      const st = getAchievementsState();
+      const now = Date.now();
+      const today = todayKey(); // "YYYY-MM-DD"
+
+      const isNewDay = st.stats.lastSeenDate !== today;
+
+      st.stats.visits = (st.stats.visits ?? 0) + 1;
+      st.stats.lastVisitAt = now;
+      st.stats.lastSeenDate = today;
+
+      if (!st.stats.firstVisitAt) st.stats.firstVisitAt = now;
+
+      save(st);
+      return { isNewDay, state: st };
+    }
+    ```
+    
+    Tracks each visit and detects returning users by comparing dates.
+  </Tab>
+  <Tab title="unlockAchievement">
+    ```ts components/gamification/achievementsStore.ts:125-168
+    export function unlockAchievement(
+      id: AchievementId,
+      opts?: { accumulative?: boolean }
+    ): { unlockedNow: boolean; state: AchievementsStateV1; entry: UnlockedEntry } {
+      const st = getAchievementsState();
+      const COOLDOWN_MS = 2500;
+      const now = Date.now();
+      const existing = st.unlocked?.[id];
+
+      // Anti-spam protection (mobile touch events)
+      const last = Number(sessionStorage.getItem("guigolo_achievements_cooldown_v1") ?? "0");
+      if (now - last < COOLDOWN_MS && id !== "first_contact") {
+        return { unlockedNow: false, state: st, entry: { at: now, count: 1 } };
+      }
+      sessionStorage.setItem("guigolo_achievements_cooldown_v1", String(now));
+
+      // If already unlocked
+      if (existing) {
+        if (opts?.accumulative) {
+          existing.count += 1;
+          save(st);
+        }
+        return { unlockedNow: false, state: st, entry: existing };
+      }
+
+      // First unlock
+      const entry: UnlockedEntry = { at: now, count: 1 };
+      st.unlocked = st.unlocked || {};
+      st.unlocked[id] = entry;
+      save(st);
+
+      // Emit event for UI (toast notification)
+      emitAchievementUnlocked({ id, at: entry.at });
+
+      return { unlockedNow: true, state: st, entry };
+    }
+    ```
+    
+    Handles achievement unlocking with cooldown protection and event emission.
+  </Tab>
+  <Tab title="hasAchievement">
+    ```ts components/gamification/achievementsStore.ts:120-123
+    export function hasAchievement(id: AchievementId): boolean {
+      const st = getAchievementsState();
+      return Boolean(st.unlocked?.[id]);
+    }
+    ```
+    
+    Simple check to see if an achievement is already unlocked.
+  </Tab>
+</Tabs>
+
+## Achievement Triggers
+
+The `useAchievmentsTrigger` hook (`useAchievmentsTrigger.ts`) contains sophisticated logic to detect genuine user engagement:
+
+### 1. Scroll Detection (Anti-Programmatic)
+
+From `useAchievmentsTrigger.ts:16-121`:
+
+```ts
+const lastHumanInputAtRef = useRef(0);
+const maxScrollRatioRef = useRef(0);
+const ignoreScrollUntilRef = useRef(0);
+
+useEffect(() => {
+  // Mark human interaction
+  const markHuman = () => {
+    lastHumanInputAtRef.current = Date.now();
+  };
+
+  // 1. Detect real human input
+  const onWheel = () => markHuman();
+  const onTouchMove = () => markHuman();
+  const onKeyDown = (e: KeyboardEvent) => {
+    const keys = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "];
+    if (keys.includes(e.key)) markHuman();
+  };
+
+  window.addEventListener("wheel", onWheel, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: true });
+  window.addEventListener("keydown", onKeyDown);
+
+  // 2. Block scroll events after hash navigation
+  const lockScroll = (ms = 1200) => {
+    ignoreScrollUntilRef.current = Date.now() + ms;
+  };
+
+  window.addEventListener("hashchange", () => lockScroll(1200));
+
+  // 3. Scroll handler - only count if human input was recent
+  const onScroll = () => {
+    const now = Date.now();
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const THRESHOLD = isMobile ? 0.55 : 0.35;
+
+    // Ignore if in blocked window (hash navigation)
+    if (now < ignoreScrollUntilRef.current) return;
+
+    // Ignore if no recent human input
+    if (now - lastHumanInputAtRef.current > 800) return;
+
+    const scrollTop = window.scrollY;
+    const scrollable = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const ratio = scrollTop / scrollable;
+
+    if (ratio > maxScrollRatioRef.current) maxScrollRatioRef.current = ratio;
+
+    if (!hasAchievement("explorer") && maxScrollRatioRef.current >= THRESHOLD) {
+      unlockAchievement("explorer");
+    }
+  };
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+}, []);
+```
+
+<Note>
+  **Anti-Bot Logic:** The system distinguishes between:
+  - **Human scroll:** Triggered by wheel, touch, or keyboard events
+  - **Programmatic scroll:** Hash navigation, smooth scroll, auto-scroll
+  
+  It only counts scroll events that occur within 800ms of a human input event, preventing bots and auto-scrollers from unlocking achievements.
+</Note>
+
+### 2. Reading Detection (Time on Section)
+
+From `useAchievmentsTrigger.ts:106-159`:
+
+```ts
+// If user stays on a section for 2.8s with active engagement
+const startExplorerTimer = () => {
+  if (hasAchievement("explorer")) return;
+  if (explorerTimerRef.current) return;
+
+  explorerTimerRef.current = window.setTimeout(() => {
+    explorerTimerRef.current = null;
+
+    // Revalidate: still human interaction?
+    const now2 = Date.now();
+    if (now2 < ignoreScrollUntilRef.current) return;
+    if (now2 - lastHumanInputAtRef.current > 2500) return;
+
+    unlockAchievement("explorer");
+    checkMissionRoute();
+  }, 2800);
+};
+
+// Watch key sections with IntersectionObserver
+const idsToWatch = ["services", "projects", "about", "faq", "contacto"];
+const els = idsToWatch.map((id) => document.getElementById(id)).filter(Boolean);
+
+const io = new IntersectionObserver(
+  (entries) => {
+    const anyGood = entries.some((en) => 
+      en.isIntersecting && en.intersectionRatio >= 0.6
+    );
+
+    if (!anyGood) {
+      cancelExplorerTimer();
+      return;
+    }
+
+    // Only start timer if recent human interaction
+    const now3 = Date.now();
+    if (now3 < ignoreScrollUntilRef.current) return;
+    if (now3 - lastHumanInputAtRef.current > 1200) return;
+
+    startExplorerTimer();
+  },
+  { threshold: [0.6] }
+);
+
+els.forEach((el) => io.observe(el));
+```
+
+The system watches for sections that are:
+- **60% visible** in viewport
+- **Viewed for 2.8+ seconds**
+- **With recent human interaction** (within 1.2s)
+
+This detects actual reading, not just scrolling past.
+
+### 3. Services Interaction
+
+From `useAchievmentsTrigger.ts:176-207`:
+
+```ts
+const servicesClicksRef = useRef(0);
+
+useEffect(() => {
+  const root = document.getElementById("services");
+  if (!root) return;
+
+  const onClickCapture = (e: Event) => {
+    if (hasAchievement("services_decoded")) return;
+
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // Count clicks on buttons within services section
+    const btn = target.closest("button");
+    if (!btn) return;
+
+    servicesClicksRef.current += 1;
+
+    // Unlock after 2 real clicks
+    if (servicesClicksRef.current >= 2) {
+      unlockAchievement("services_decoded");
+      checkMissionRoute();
+    }
+  };
+
+  root.addEventListener("click", onClickCapture, true);
+}, []);
+```
+
+Tracks button clicks within the `#services` section. Requires **2 interactions** to unlock, preventing accidental clicks.
+
+### 4. Project Gallery Navigation
+
+From `useAchievmentsTrigger.ts:210-330`:
+
+```ts
+const seenSlidesRef = useRef<Set<number>>(new Set());
+
+const getTotalSlides = () => {
+  const root = document.getElementById("projects");
+  const track = root?.querySelector(".flex");
+  return Math.max(1, track?.children?.length ?? 0);
+};
+
+const required = () => {
+  const total = getTotalSlides();
+  return Math.ceil(total / 2); // Half the slides
+};
+
+const tryRegisterVisible = () => {
+  if (!projectsInteractedRef.current) return; // Anti-autoplay
+  if (hasAchievement("projects_gallery")) return;
+
+  const slides = Array.from(
+    root.querySelectorAll<HTMLElement>(".min-w-0.flex-\\[0_0_100\\%\\]")
+  );
+
+  // Find most visible slide
+  let bestIdx = 0;
+  let bestScore = -Infinity;
+
+  slides.forEach((el, idx) => {
+    const r = el.getBoundingClientRect();
+    const overlap = Math.max(0, Math.min(r.right, vr.right) - Math.max(r.left, vr.left));
+    if (overlap > bestScore) {
+      bestScore = overlap;
+      bestIdx = idx;
+    }
+  });
+
+  seenSlidesRef.current.add(bestIdx);
+
+  // Unlock when user has seen half the slides
+  if (seenSlidesRef.current.size >= required()) {
+    unlockAchievement("projects_gallery");
+  }
+};
+
+// A) NEXT/PREV button clicks count as interaction
+const onClickCapture = (e: Event) => {
+  const btn = (e.target as HTMLElement).closest("button");
+  if (!btn) return;
+
+  const txt = (btn.textContent || "").trim().toUpperCase();
+  if (txt === "PREVIOUS" || txt === "NEXT") {
+    markInteraction();
+    setTimeout(tryRegisterVisible, 250);
+  }
+};
+
+// B) Swipe/drag counts as interaction
+root.addEventListener("pointerdown", () => {
+  markInteraction();
+  setTimeout(tryRegisterVisible, 250);
+});
+```
+
+<Accordion title="How Project Gallery Detection Works">
+  1. **Track Unique Slides:** Uses a `Set` to remember which slides have been viewed
+  2. **Anti-Autoplay:** Only counts slides viewed after manual interaction (click/swipe)
+  3. **Threshold:** Requires viewing **half** of the total slides
+  4. **Smart Detection:** Finds the most visible slide based on viewport overlap
+  
+  Example: If there are 6 project slides, the user must manually navigate to and view at least 3 unique slides.
+</Accordion>
+
+## Mission System
+
+Missions are higher-level objectives that often require multiple achievements:
+
+### Mission Types
+
+```ts components/gamification/missionsStore.ts
+export type MissionId =
+  | "mission_route"      // Explorer + Services + Projects
+  | "mission_attention"  // 20s on Projects + 15s on About
+  | "mission_contact"    // Send contact form
+  | "mission_easter";    // Type "GUIGOLO" on keyboard
+```
+
+### Mission Metadata
+
+```ts components/gamification/missionsCatalog.ts
+export const MISSIONS: MissionMeta[] = [
+  {
+    id: "mission_route",
+    title: "Ruta completa",
+    description: "Explora el sitio con calma: revisa servicios y navega varios proyectos.",
+  },
+  {
+    id: "mission_attention",
+    title: "Me quedé a ver",
+    description: "Quédate un rato en Proyectos y luego en Sobre mí. Sin prisa, como quien sí quiere entender.",
+  },
+  {
+    id: "mission_contact",
+    title: "Hablemos en serio",
+    description: "Abre el formulario, escribe un mensaje y envíalo.",
+  },
+  {
+    id: "mission_easter",
+    title: "Curioso de corazón",
+    description: 'Easter egg: escribe "GUIGOLO" con tu teclado en cualquier parte del sitio.',
+  },
+];
+```
+
+### Mission: Route (Composite Achievement)
+
+From `useAchievmentsTrigger.ts:22-32`:
+
+```ts
+const checkMissionRoute = () => {
+  if (hasMission("mission_route")) return;
+
+  if (
+    hasAchievement("explorer") &&
+    hasAchievement("services_decoded") &&
+    hasAchievement("projects_gallery")
+  ) {
+    completeMission("mission_route");
+  }
+};
+```
+
+This mission completes when the user has:
+1. Scrolled and read content (`explorer`)
+2. Interacted with services (`services_decoded`)
+3. Navigated project gallery (`projects_gallery`)
+
+### Mission: Attention (Time-Based)
+
+From `useMissionsTrigger.ts:53-156`:
+
+```ts
+const projectsMs = 20_000; // 20 seconds
+const aboutMs = 15_000;     // 15 seconds
+
+const pVisibleRef = useRef(false);
+const aVisibleRef = useRef(false);
+const pMsRef = useRef(0);
+const aMsRef = useRef(0);
+
+useEffect(() => {
+  const pEl = await waitForEl("projects");
+  const aEl = await waitForEl("about");
+
+  // IntersectionObserver tracks visibility
+  const ioP = new IntersectionObserver(
+    (entries) => {
+      pVisibleRef.current = entries.some((e) => e.isIntersecting);
+      if (pVisibleRef.current) startLoop();
+    },
+    { threshold: 0.6 }
+  );
+
+  // requestAnimationFrame loop accumulates time
+  const loop = () => {
+    if (hasMission("mission_attention")) {
+      stopLoop();
+      return;
+    }
+
+    // Only count time if human interaction occurred
+    if (!humanRef.current) {
+      rafRef.current = requestAnimationFrame(loop);
+      return;
+    }
+
+    const now = performance.now();
+    const dt = now - lastTickRef.current;
+
+    if (pVisibleRef.current && !pDoneRef.current) pMsRef.current += dt;
+    if (aVisibleRef.current && !aDoneRef.current) aMsRef.current += dt;
+
+    if (pMsRef.current >= projectsMs) pDoneRef.current = true;
+    if (aMsRef.current >= aboutMs) aDoneRef.current = true;
+
+    if (pDoneRef.current && aDoneRef.current) {
+      completeMission("mission_attention");
+      stopLoop();
+      return;
+    }
+
+    rafRef.current = requestAnimationFrame(loop);
+  };
+}, []);
+```
+
+This mission uses:
+- **IntersectionObserver** to detect when sections are 60% visible
+- **requestAnimationFrame** for precise time tracking
+- **Human interaction check** to prevent idle time from counting
+
+### Mission: Easter Egg (Keyboard Sequence)
+
+From `useAchievmentsTrigger.ts:404-434`:
+
+```ts
+useEffect(() => {
+  if (hasMission("mission_easter")) return;
+
+  const seq = ["G","U","I","G","O","L","O"];
+  let idx = 0;
+  let lastAt = 0;
+
+  const onKey = (e: KeyboardEvent) => {
+    if (hasMission("mission_easter")) return;
+
+    const key = (e.key || "").toUpperCase();
+    const now = Date.now();
+
+    // Reset if too much time between keys (1.6s)
+    if (lastAt && now - lastAt > 1600) idx = 0;
+    lastAt = now;
+
+    if (key === seq[idx]) {
+      idx += 1;
+      if (idx >= seq.length) {
+        completeMission("mission_easter");
+        idx = 0;
+      }
+    } else {
+      // Restart if user types 'G' (allows GUUUIGOLO to still work)
+      idx = key === "G" ? 1 : 0;
+    }
+  };
+
+  window.addEventListener("keydown", onKey);
+}, []);
+```
+
+User must type **"GUIGOLO"** on their keyboard within 1.6 seconds between keypresses.
+
+## Event System
+
+The system emits custom events when achievements/missions unlock:
+
+```ts components/gamification/achievementEvents.ts
+export function emitAchievementUnlocked(payload: { id: string; at: number }) {
+  window.dispatchEvent(
+    new CustomEvent("achievementUnlocked", { detail: payload })
+  );
+}
+```
+
+The `AchievementsUI` component listens for these events and displays toast notifications.
+
+## Anti-Spam Protection
+
+From `achievementsStore.ts:131-143`:
+
+```ts
+const COOLDOWN_MS = 2500;
+const COOLDOWN_KEY = "guigolo_achievements_cooldown_v1";
+
+try {
+  const last = Number(sessionStorage.getItem(COOLDOWN_KEY) ?? "0");
+  if (now - last < COOLDOWN_MS) {
+    // Don't block real form submission, only spam achievements
+    if (id !== "first_contact") {
+      return { unlockedNow: false, state: st, entry: { at: now, count: 1 } };
+    }
+  }
+  sessionStorage.setItem(COOLDOWN_KEY, String(now));
+} catch {}
+```
+
+**Cooldown mechanism:**
+- 2.5 second cooldown between achievement unlocks
+- Stored in `sessionStorage` (per-tab)
+- Prevents rapid-fire touch events on mobile from triggering multiple achievements
+- Exception: `first_contact` (form submission) always goes through
+
+## Data Persistence Strategy
+
+<Tabs>
+  <Tab title="localStorage">
+    Achievements and missions persist across sessions:
+    
+    ```ts
+    const STORAGE_KEY = "guigolo_achievements_v1";
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    ```
+    
+    Data survives:
+    - Page refreshes
+    - Browser restarts
+    - Multiple visits
+  </Tab>
+  <Tab title="sessionStorage">
+    Cooldown protection is session-scoped:
+    
+    ```ts
+    sessionStorage.setItem("guigolo_achievements_cooldown_v1", String(now));
+    ```
+    
+    Resets:
+    - When tab closes
+    - Across browser restarts
+  </Tab>
+  <Tab title="Versioning">
+    State includes version number for migrations:
+    
+    ```ts
+    export type AchievementsStateV1 = {
+      version: 1;
+      unlocked: /* ... */;
+      stats: /* ... */;
+    };
+    ```
+    
+    If version mismatch detected, state resets to default.
+  </Tab>
+</Tabs>
+
+## Why This Approach?
+
+<CardGroup cols={2}>
+  <Card title="No Backend Required" icon="server">
+    Entirely client-side implementation using Web APIs - no server calls, no database.
+  </Card>
+  <Card title="Privacy-First" icon="shield">
+    All data stays in user's browser. No external tracking or data collection.
+  </Card>
+  <Card title="Instant Feedback" icon="bolt">
+    Zero latency - achievements unlock immediately without network requests.
+  </Card>
+  <Card title="Resilient" icon="heart">
+    Graceful degradation - if localStorage fails, system continues without errors.
+  </Card>
+</CardGroup>
+
+## File References
+
+- **Boot Component:** `components/gamification/Boot.tsx:1`
+- **Achievements Store:** `components/gamification/achievementsStore.ts:1`
+- **Achievements Catalog:** `components/gamification/achievementsCatalog.ts:1`
+- **Achievement Triggers:** `components/gamification/useAchievmentsTrigger.ts:1`
+- **Missions Store:** `components/gamification/missionsStore.ts:1`
+- **Missions Catalog:** `components/gamification/missionsCatalog.ts:1`
+- **Mission Triggers:** `components/gamification/useMissionsTrigger.ts:1`
+- **Visit Tracking:** `components/gamification/achievementsStore.ts:100`
+- **Scroll Detection:** `components/gamification/useAchievmentsTrigger.ts:35`
+- **Project Gallery Logic:** `components/gamification/useAchievmentsTrigger.ts:210`

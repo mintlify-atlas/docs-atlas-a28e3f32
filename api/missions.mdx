@@ -1,0 +1,240 @@
+---
+title: "Missions API"
+description: "Mission system for tracking complex achievement combinations"
+---
+
+## Overview
+
+Missions are multi-step challenges that require unlocking specific combinations of achievements. They provide deeper engagement mechanics beyond single achievements.
+
+## Mission Types
+
+The mission system tracks four main mission types defined in `missionsCatalog.ts`:
+
+### 1. Explorer Mission
+
+**Requirements**: Complete basic exploration achievements
+- `first_step`
+- `explorer`
+- `curious`
+
+**Purpose**: Reward users for initial site exploration
+
+### 2. Deep Diver Mission
+
+**Requirements**: Demonstrate serious interest
+- `services_decoded`
+- `projects_gallery`
+- `read_between_lines`
+
+**Purpose**: Recognize users who thoroughly investigate the portfolio
+
+### 3. Visual Match Mission
+
+**Requirements**: Return engagement
+- `visual_match` (return visit)
+- Time-based: 20+ seconds on site
+
+**Purpose**: Track recurring interest and time investment
+
+### 4. First Contact Mission
+
+**Requirements**: Complete the conversion funnel
+- `almost_talked` (view contact form)
+- `took_courage` (start writing)
+- `first_contact` (submit form)
+
+**Purpose**: Track the full contact journey from intent to action
+
+## State Management
+
+Missions are stored in localStorage at `guigolo_missions_v1`:
+
+```typescript
+type MissionsStateV1 = {
+  version: 1;
+  completed: Partial<Record<MissionId, CompletedEntry>>;
+  progress: Partial<Record<MissionId, ProgressEntry>>;
+};
+```
+
+### CompletedEntry
+
+```typescript
+type CompletedEntry = {
+  at: number;           // Timestamp when completed
+  achievementIds: AchievementId[]; // Required achievements
+};
+```
+
+### ProgressEntry
+
+```typescript
+type ProgressEntry = {
+  current: number;      // Current progress count
+  required: number;     // Total required for completion
+  lastUpdated: number;  // Last progress update timestamp
+};
+```
+
+## Functions
+
+### checkMissionProgress()
+
+Evaluates mission completion based on current achievements.
+
+<ParamField path="missionId" type="MissionId" required>
+  The mission to check
+</ParamField>
+
+<ParamField path="achievementsState" type="AchievementsStateV1" required>
+  Current achievement state to evaluate against
+</ParamField>
+
+```typescript
+import { checkMissionProgress } from '@/components/gamification/missionsStore';
+import { getAchievementsState } from '@/components/gamification/achievementsStore';
+
+const achievementsState = getAchievementsState();
+const result = checkMissionProgress('explorer', achievementsState);
+
+if (result.completed) {
+  console.log('Mission completed!');
+} else {
+  console.log(`Progress: ${result.progress.current}/${result.progress.required}`);
+}
+```
+
+### isMissionCompleted()
+
+Quick check if a mission is already completed.
+
+```typescript
+import { isMissionCompleted } from '@/components/gamification/missionsStore';
+
+if (isMissionCompleted('first_contact')) {
+  // User has completed the contact mission
+}
+```
+
+### getMissionsState()
+
+Retrieves the complete missions state from localStorage.
+
+```typescript
+import { getMissionsState } from '@/components/gamification/missionsStore';
+
+const state = getMissionsState();
+console.log(`Completed missions: ${Object.keys(state.completed).length}`);
+```
+
+## Time-Based Missions
+
+Some missions include time requirements tracked via visibility:
+
+```typescript
+// Example from MissionsBoot.tsx
+let visibilityTime = 0;
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const start = Date.now();
+    const interval = setInterval(() => {
+      visibilityTime += 1;
+      
+      if (visibilityTime >= 20) {
+        // Unlock time-based achievement
+        unlockAchievement('observer');
+        clearInterval(interval);
+      }
+    }, 1000);
+  }
+});
+```
+
+<Info>
+  Time-based missions only count "active" time when the tab is visible, not background time.
+</Info>
+
+## Mission Events
+
+Listen for mission completion events:
+
+```typescript
+import { onMissionCompleted } from '@/components/gamification/missionsEvents';
+
+onMissionCompleted((mission) => {
+  console.log(`Mission completed: ${mission.id}`);
+  // Show celebration UI
+});
+```
+
+## Integration with Achievements
+
+Missions automatically check for completion when achievements unlock:
+
+```typescript
+// From MissionsBoot.tsx
+import { onAchievementUnlocked } from './achievementEvents';
+import { checkMissionProgress } from './missionsStore';
+
+onAchievementUnlocked(() => {
+  const achievementsState = getAchievementsState();
+  
+  // Check all missions
+  MISSIONS.forEach(mission => {
+    checkMissionProgress(mission.id, achievementsState);
+  });
+});
+```
+
+## Mission Catalog
+
+Access mission definitions:
+
+```typescript
+import { MISSIONS, MISSION_BY_ID } from '@/components/gamification/missionsCatalog';
+
+// Get all missions
+console.log(MISSIONS.length); // 4
+
+// Get specific mission
+const mission = MISSION_BY_ID['explorer'];
+console.log(mission.title);
+console.log(mission.requiredAchievements); // ['first_step', 'explorer', 'curious']
+```
+
+## LocalStorage Schema
+
+```json
+{
+  "version": 1,
+  "completed": {
+    "explorer": {
+      "at": 1709584400000,
+      "achievementIds": ["first_step", "explorer", "curious"]
+    }
+  },
+  "progress": {
+    "first_contact": {
+      "current": 2,
+      "required": 3,
+      "lastUpdated": 1709584450000
+    }
+  }
+}
+```
+
+## Best Practices
+
+<Tip>
+  Design missions to reward meaningful engagement patterns, not just arbitrary achievement collecting.
+</Tip>
+
+<Warning>
+  Missions with time requirements should account for users who navigate away and return. Use visibility tracking, not simple timers.
+</Warning>
+
+<Note>
+  Mission progress is calculated on-demand rather than being continuously updated. This reduces localStorage writes and improves performance.
+</Note>

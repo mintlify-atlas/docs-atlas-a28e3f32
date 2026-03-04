@@ -1,0 +1,487 @@
+---
+title: Design System
+description: Comprehensive guide to Guigolo's Tailwind-based design system, including color palette, typography, spacing, and responsive patterns
+---
+
+## Overview
+
+Guigolo's design system is built on **Tailwind CSS 3.4** with custom configuration that establishes a dark-themed, high-contrast visual language. The system prioritizes readability, accessibility, and visual hierarchy through carefully crafted design tokens.
+
+## Tailwind Configuration
+
+```js tailwind.config.js
+module.exports = {
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
+      "3xl": "1920px",
+      "4xl": "2560px",
+    },
+    extend: {
+      colors: { /* custom palette */ },
+      fontFamily: { /* custom fonts */ },
+      fontSize: { /* custom scale */ },
+    },
+  },
+};
+```
+
+## Typography System
+
+### Font Stack
+
+Guigolo uses two custom Google Fonts loaded via `next/font/google`:
+
+```tsx app/layout.tsx
+import { Unbounded, Anta } from "next/font/google";
+
+const unbounded = Unbounded({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-unbounded",
+});
+
+const anta = Anta({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-anta",
+});
+```
+
+<Tabs>
+  <Tab title="Unbounded">
+    **Primary font for all text**
+    
+    - Weights: 300 (Light), 400 (Regular), 500 (Medium), 600 (Semibold)
+    - Used for: Body text, headings, UI labels
+    - Variable: `--font-unbounded`
+    - Applied via Tailwind: `font-display`, `font-body`
+    
+    Unbounded is a geometric sans-serif that provides excellent readability at all sizes while maintaining a contemporary, technical aesthetic.
+  </Tab>
+  <Tab title="Anta">
+    **Accent font for special treatments**
+    
+    - Weight: 400 only
+    - Used for: Special headings, decorative elements
+    - Variable: `--font-anta`
+    - Applied via Tailwind: `font-accent`
+    
+    Anta serves as a distinctive accent, adding visual interest without competing with primary content.
+  </Tab>
+</Tabs>
+
+### Font Family Tokens
+
+```js tailwind.config.js
+fontFamily: {
+  display: ["var(--font-unbounded)"],
+  body: ["var(--font-unbounded)"],
+  accent: ["var(--font-anta)"],
+}
+```
+
+### Typography Scale
+
+Custom font sizes with paired line heights:
+
+```js tailwind.config.js
+fontSize: {
+  // Headings
+  "heading-xl": ["36px", { lineHeight: "125%" }],
+  "heading-lg": ["24px", { lineHeight: "28.8px" }],
+  "heading-md": ["16px", { lineHeight: "19.2px" }],
+
+  // Body text
+  "body-lg": ["14px", { lineHeight: "15px" }],
+  "body-md": ["12px", { lineHeight: "13.75px" }],
+  "body-sm": ["11px", { lineHeight: "12.5px" }],
+
+  // Labels
+  "label-xl": ["32px", { lineHeight: "38.4px" }],
+  "label-sm": ["12px", { lineHeight: "14.4px" }],
+}
+```
+
+#### Usage Example
+
+```tsx
+<h2 className="text-heading-xl font-semibold">
+  Large Heading
+</h2>
+
+<p className="text-body-lg text-neutral-white/70">
+  Body text with reduced opacity
+</p>
+
+<span className="text-label-sm tracking-label-sm uppercase">
+  Small Label
+</span>
+```
+
+### Letter Spacing
+
+```js tailwind.config.js
+letterSpacing: {
+  "heading-lg": "1.92px",
+  "label-sm": "0.96px",
+}
+```
+
+### Responsive Typography Utilities
+
+Global responsive heading classes defined in `globals.css`:
+
+```css app/globals.css
+@layer components {
+  .heading-h2 {
+    @apply font-semibold leading-[125%] text-neutral-white text-center;
+    @apply text-[clamp(1.25rem,3.75vw,2.25rem)];
+  }
+
+  @screen lg {
+    .heading-h2 {
+      @apply text-[clamp(1.4rem,2.75vw,2.75rem)];
+    }
+  }
+
+  @screen 2xl {
+    .heading-h2 {
+      @apply text-[clamp(2rem,1.2vw,3.5rem)];
+    }
+  }
+}
+```
+
+<Note>
+  The `clamp()` function creates fluid typography that scales smoothly between breakpoints without discrete jumps. The pattern `clamp(min, preferred, max)` ensures text remains readable across all viewport sizes.
+</Note>
+
+Real usage from `Hero.tsx:51`:
+
+```tsx
+<h1 className="font-semibold tracking-tight leading-[125%] 
+  text-neutral-white 
+  text-[clamp(1.5rem,3.75vw,3rem)] 
+  md:text-[clamp(1.25rem,3.25vw,3.75rem)] 
+  lg:text-[clamp(1.5rem,2.75vw,3rem)] 
+  xl:text-[clamp(2rem,2.25vw,3.5rem)] 
+  2xl:text-[clamp(3rem,2vw,4.75rem)] 
+  uppercase">
+  <span className="text-gradient-anim">Diseñador UX/UI</span>
+  que convierte ideas en productos claros
+</h1>
+```
+
+## Color Palette
+
+### Base Colors
+
+<Tabs>
+  <Tab title="Neutrals">
+    ```js tailwind.config.js
+    colors: {
+      "neutral-black-900": "#101010",  // Primary background
+      "neutral-black-800": "#161616",  // Secondary surfaces
+      "neutral-white": "#ededed",      // Primary text
+      "neutral-gray-600": "#3c3c3c",   // Borders, dividers
+      "neutral-gray-500": "#4c4c4c",   // Subtle backgrounds
+    }
+    ```
+    
+    The neutral palette establishes a dark-themed foundation with high contrast between background and text.
+  </Tab>
+  <Tab title="Accents">
+    ```js tailwind.config.js
+    colors: {
+      "accent-lilac": "#6900ea",              // Purple accent
+      "accent-cyan-10": "rgba(20,177,255,0.10)", // Cyan with 10% opacity
+      "accent-lime": "#C6FF00",               // Primary CTA color
+    }
+    ```
+    
+    Accent colors provide visual hierarchy and brand identity:
+    - **Lime** (`#C6FF00`): Primary CTAs, important actions
+    - **Lilac** (`#6900ea`): Secondary accents, highlights
+    - **Cyan** (`rgba(20,177,255,0.10)`): Subtle backgrounds, glows
+  </Tab>
+</Tabs>
+
+### Color Usage Patterns
+
+<CardGroup cols={2}>
+  <Card title="Backgrounds">
+    ```tsx
+    className="bg-neutral-black-900"
+    className="bg-neutral-black-800/40"
+    ```
+    Primary: `neutral-black-900`
+    
+    Surfaces: `neutral-black-800` with optional opacity
+  </Card>
+  <Card title="Text">
+    ```tsx
+    className="text-neutral-white"
+    className="text-neutral-white/70"
+    className="text-neutral-white/50"
+    ```
+    Full opacity for headings
+    
+    70% for body text
+    
+    50% for secondary info
+  </Card>
+  <Card title="Borders">
+    ```tsx
+    className="border-neutral-white/10"
+    className="border-neutral-white/20"
+    ```
+    Subtle dividers at 10%
+    
+    Visible borders at 20%
+  </Card>
+  <Card title="CTAs">
+    ```tsx
+    className="bg-accent-lime text-black"
+    className="border border-neutral-white/20"
+    ```
+    Primary: lime background
+    
+    Secondary: outlined ghost buttons
+  </Card>
+</CardGroup>
+
+### CSS Custom Properties
+
+Additional color variables defined in `globals.css`:
+
+```css app/globals.css
+:root {
+  --about-chip: rgba(105, 0, 234, 0.06);     /* Subtle purple tint */
+  --about-chip-2: rgba(20, 177, 255, 0.06);  /* Subtle cyan tint */
+  --about-ghost: rgba(20, 177, 255, 0.10);   /* Ghost text */
+  --about-glow: rgba(20, 177, 255, 0.18);    /* Glow effects */
+}
+```
+
+Used for specialized effects:
+
+```css
+.about-chip::before {
+  background:
+    radial-gradient(900px 520px at 35% 35%, var(--about-chip), rgba(0,0,0,0) 60%),
+    radial-gradient(900px 520px at 70% 55%, var(--about-chip-2), rgba(0,0,0,0) 65%);
+  opacity: 0.85;
+}
+```
+
+## Responsive Breakpoints
+
+Extended breakpoint system for large displays:
+
+```js tailwind.config.js
+screens: {
+  sm: "640px",   // Mobile landscape
+  md: "768px",   // Tablet portrait
+  lg: "1024px",  // Tablet landscape / small laptop
+  xl: "1280px",  // Desktop
+  "2xl": "1536px", // Large desktop
+  "3xl": "1920px", // 1080p displays
+  "4xl": "2560px", // 2K/4K displays
+}
+```
+
+### Responsive Patterns
+
+<Accordion title="Mobile-First Approach">
+  ```tsx components/Hero.tsx
+  <div className="
+    px-6                      /* Base: 24px padding */
+    md:pl-[48px] md:pr-[48px]  /* Tablet: 48px */
+    lg:pl-[96px]              /* Laptop: 96px left */
+    xl:pl-[128px]             /* Desktop: 128px left */
+    2xl:pl-[144px]            /* Large: 144px left */
+    3xl:pl-[244px]            /* 1080p: 244px left */
+    4xl:pl-[320px]            /* 2K: 320px left */
+  ">
+  ```
+  
+  Each breakpoint progressively increases spacing, ensuring optimal content width and readability on all screen sizes.
+</Accordion>
+
+<Accordion title="Grid Layouts">
+  ```tsx
+  <div className="grid items-center lg:grid-cols-2">
+    {/* Single column on mobile, two columns on laptop+ */}
+  </div>
+  ```
+  
+  From `Hero.tsx:40` - The hero section stacks vertically on mobile and switches to a two-column layout at 1024px.
+</Accordion>
+
+<Accordion title="Text Alignment">
+  ```tsx components/Hero.tsx:51
+  <h1 className="
+    text-center           /* Mobile: centered */
+    sm:text-center
+    md:text-center
+    lg:text-left          /* Desktop: left-aligned */
+    xl:text-left
+    2xl:text-left
+  ">
+  ```
+  
+  Content centers on mobile for visual balance, then aligns left on larger screens for readability.
+</Accordion>
+
+## Spacing System
+
+Tailwind's default spacing scale is used throughout:
+
+```tsx
+pt-24    /* 96px - Large top padding */
+mt-7     /* 28px - Medium top margin */
+gap-4    /* 16px - Standard gap */
+px-6     /* 24px - Base horizontal padding */
+```
+
+Common spacing patterns:
+
+```tsx components/ProjectsSection.tsx
+<div className="mx-auto max-w-[1280px] px-6 md:px-12 lg:px-24 pt-12 pb-10">
+  {/* 
+    - Centered container with max width
+    - Responsive horizontal padding (24px → 48px → 96px)
+    - Vertical rhythm (48px top, 40px bottom)
+  */}
+</div>
+```
+
+## Design Tokens in Action
+
+### Button Styles
+
+Primary CTA pattern from `Hero.tsx:62-66`:
+
+```tsx
+<ContactLink
+  ctaId="hero-contact"
+  className="
+    rounded-md                              /* 6px border radius */
+    bg-accent-lime                          /* Lime background */
+    px-6 py-3                               /* 24px × 12px padding */
+    text-black                              /* Black text for contrast */
+    font-medium                             /* 500 weight */
+    shadow-[0_0_0_2px_rgba(0,0,0,0.25)]    /* Subtle inset shadow */
+    w-full md:w-auto                        /* Full width mobile, auto desktop */
+  "
+>
+  Contactar
+</ContactLink>
+```
+
+Secondary button pattern:
+
+```tsx
+<Link
+  href="#projects"
+  className="
+    rounded-md
+    border border-neutral-white/20        /* Outlined style */
+    px-6 py-3
+    text-neutral-white/90                 /* Near-white text */
+    hover:border-neutral-white/40         /* Hover state */
+    transition                            /* Smooth state changes */
+  "
+>
+  Ver proyectos
+</Link>
+```
+
+### Card Styles
+
+From `ProjectsSection.tsx:161`:
+
+```tsx
+<div className="
+  mx-auto max-w-[56rem]                  /* Constrained width */
+  border border-neutral-white/10         /* Subtle border */
+  bg-neutral-black-800/40                /* Semi-transparent background */
+  p-6 md:p-8                             /* Responsive padding */
+  text-center
+">
+```
+
+## Animation Utilities
+
+Custom animations defined in `globals.css`:
+
+```css app/globals.css
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-gradient-anim {
+  background: linear-gradient(90deg, #9CFF00, #FF4FD8, #14B1FF, #9CFF00);
+  background-size: 300% 300%;
+  animation: gradientShift 26s ease-in-out infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+```
+
+Floating animation for hero graphics:
+
+```css
+@keyframes floatSoftA {
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(0, -5px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.float-slow-1 {
+  animation: floatSoftA 8.5s ease-in-out infinite;
+}
+```
+
+<Note>
+  Animations respect user preferences via `@media (prefers-reduced-motion: reduce)` which disables all motion for accessibility.
+</Note>
+
+## Accessibility Considerations
+
+<CardGroup cols={2}>
+  <Card title="Color Contrast" icon="circle-half-stroke">
+    White text (`#ededed`) on dark backgrounds (`#101010`) provides WCAG AAA contrast ratio (>14:1).
+  </Card>
+  <Card title="Focus States" icon="bullseye">
+    Interactive elements use visible hover and focus states with smooth transitions.
+  </Card>
+  <Card title="Reduced Motion" icon="gauge">
+    All animations are disabled when `prefers-reduced-motion` is set.
+  </Card>
+  <Card title="Semantic HTML" icon="code">
+    Proper heading hierarchy and landmark regions for screen readers.
+  </Card>
+</CardGroup>
+
+## File References
+
+- **Tailwind Config:** `tailwind.config.js:1`
+- **Global Styles:** `app/globals.css:1`
+- **Font Setup:** `app/layout.tsx:8-18`
+- **Color Palette:** `tailwind.config.js:18-31`
+- **Typography Scale:** `tailwind.config.js:38-49`
+- **Custom Animations:** `app/globals.css:180-243`
+- **Responsive Utilities:** `app/globals.css:22-70`

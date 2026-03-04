@@ -1,0 +1,279 @@
+---
+title: Navbar Components
+description: Primary and secondary navigation with custom SVG plates, mobile menu overlay, and scroll lock
+---
+
+## Overview
+
+Guigolo uses two navigation components:
+
+1. **Navbar** - Main navigation with icons and full menu
+2. **NavbarSecondary** - Simplified navigation for project pages
+
+Both feature:
+- Custom SVG plate backgrounds on desktop
+- Full-screen mobile menu with backdrop blur
+- Scroll lock when menu is open
+- Sticky positioning
+
+## File Locations
+
+```
+~/workspace/source/components/Navbar.tsx
+~/workspace/source/components/NavbarSecondary.tsx
+```
+
+## Navbar (Main)
+
+### Navigation Items
+
+```typescript
+const navItems = [
+  { href: "#home", label: "INICIO", Icon: IconHome },
+  { href: "#services", label: "SERVICIOS", Icon: IconServices },
+  { href: "#projects", label: "PROYECTOS", Icon: IconProjects },
+  { href: "#about", label: "SOBRE MI", Icon: IconAbout },
+  { href: "#contacto", label: "CONTACTO", Icon: IconContact },
+];
+```
+
+### Desktop Layout
+
+The desktop navbar uses three SVG plates:
+
+```tsx
+const H = 64;       // Height
+const LEFT_W = 256;  // Left plate width
+const RIGHT_W = 654; // Right plate width
+
+<div className="relative w-full" style={{ height: H }}>
+  {/* Left plate */}
+  <Image
+    src="/brand/nav/nav-plate-left.svg"
+    width={LEFT_W}
+    height={H}
+    className="absolute left-[1px] top-0"
+  />
+
+  {/* Center repeating pattern */}
+  <div
+    className="absolute top-0"
+    style={{
+      left: LEFT_W,
+      right: RIGHT_W,
+      height: H,
+      backgroundImage: "url(/brand/nav/nav-plate-center.svg)",
+      backgroundRepeat: "repeat-x",
+    }}
+  />
+
+  {/* Right plate */}
+  <Image
+    src="/brand/nav/nav-plate-right.svg"
+    width={RIGHT_W}
+    height={H}
+    className="absolute right-[1px] top-0"
+  />
+</div>
+```
+
+### Navigation Links
+
+Each link includes an icon and label:
+
+```tsx
+<Link
+  href={item.href}
+  className="group flex items-center gap-2 text-xs tracking-widest text-neutral-white/70 hover:text-accent-lime transition"
+>
+  {(() => {
+    const Icon = item.Icon;
+    return <Icon className="h-3.5 w-3.5 text-current opacity-80" />;
+  })()}
+  <span className="uppercase">{item.label}</span>
+</Link>
+```
+
+### Mobile Menu
+
+Full-screen overlay with backdrop blur:
+
+```tsx
+const [menuOpen, setMenuOpen] = useState(false);
+
+{menuOpen && (
+  <div className="fixed inset-0 z-[999] bg-neutral-black-900/95 backdrop-blur-md flex flex-col items-center justify-center gap-8">
+    {/* Close button */}
+    <button
+      onClick={() => setMenuOpen(false)}
+      className="absolute top-6 right-6 text-neutral-white/80 text-2xl"
+    >
+      ✕
+    </button>
+
+    {/* Navigation links */}
+    <nav className="flex flex-col items-center gap-6">
+      {navItems.map((item) => (
+        <Link
+          href={item.href}
+          onClick={() => setMenuOpen(false)}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </nav>
+
+    {/* CTA */}
+    <Link href="#contacto" onClick={() => setMenuOpen(false)}>
+      Contactar
+    </Link>
+  </div>
+)}
+```
+
+### Scroll Lock
+
+Prevents body scrolling when menu is open:
+
+```tsx
+useEffect(() => {
+  if (!menuOpen) return;
+
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, [menuOpen]);
+```
+
+### Mobile Header
+
+```tsx
+<div className="flex h-[64px] items-center justify-between px-5 backdrop-blur-[4px] opacity-85 bg-black">
+  <Link href="#home">
+    <Image src="/brand/isologo.svg" alt="Guigolo" width={32} height={32} />
+  </Link>
+
+  <button
+    onClick={() => setMenuOpen((v) => !v)}
+    className="rounded-md border border-neutral-white/10 bg-neutral-black-900/40 px-3 py-2 text-neutral-white/80"
+  >
+    ☰
+  </button>
+</div>
+```
+
+## NavbarSecondary
+
+### Props
+
+<ParamField path="items" type="NavItem[]" required>
+  Array of navigation items
+
+  ```typescript
+  type NavItem = { 
+    href: string;
+    label: string;
+  };
+  ```
+</ParamField>
+
+### Usage Example
+
+```tsx
+import NavbarSecondary from "@/components/NavbarSecondary";
+
+const items = [
+  { href: "/", label: "INICIO" },
+  { href: "/#projects", label: "PROYECTOS" },
+  { href: "/#contacto", label: "CONTACTO" },
+];
+
+<NavbarSecondary items={items} />
+```
+
+### Differences from Main Navbar
+
+- No icons in navigation links
+- Accepts custom `items` prop instead of hardcoded navItems
+- Simplified link structure
+- Same SVG plate layout and mobile behavior
+
+## Styling Patterns
+
+### Sticky Positioning
+
+Both navbars use:
+
+```css
+sticky top-0 z-50 w-full
+```
+
+### Desktop Breakpoint
+
+Desktop layout shown at `lg:` (1024px+):
+
+```tsx
+<div className="hidden lg:block">
+  {/* Desktop navbar */}
+</div>
+
+<div className="lg:hidden">
+  {/* Mobile navbar */}
+</div>
+```
+
+### Responsive Logo Sizing
+
+```css
+w-[120px] 
+md:w-[130px] 
+lg:w-[140px] 
+xl:w-[160px] 
+2xl:w-[170px]
+```
+
+### Link Hover Effects
+
+```css
+text-neutral-white/70 
+hover:text-accent-lime 
+transition
+```
+
+## Assets Required
+
+### Desktop
+- `/brand/nav/nav-plate-left.svg`
+- `/brand/nav/nav-plate-center.svg` (repeating)
+- `/brand/nav/nav-plate-right.svg`
+- `/brand/logo.svg`
+
+### Mobile
+- `/brand/isologo.svg`
+
+## Icons
+
+Main navbar imports custom icon components:
+
+```tsx
+import IconHome from "./icons/IconHome";
+import IconAbout from "./icons/IconAbout";
+import IconContact from "./icons/IconContact";
+import IconProjects from "./icons/IconProjects";
+import IconServices from "./icons/IconServices";
+```
+
+## Accessibility
+
+- Menu buttons have `aria-label` attributes
+- Mobile close button clearly visible and positioned
+- Links close menu on click for better mobile UX
+- Keyboard accessible with focus states
+
+## Z-Index Layers
+
+- Navbar: `z-50`
+- Mobile menu overlay: `z-[999]`

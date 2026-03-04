@@ -1,0 +1,103 @@
+---
+title: Introduction
+description: Learn about Guigolo, a modern Next.js 16 portfolio for UX/UI designer Guillermo González López
+---
+
+# Introduction to Guigolo
+
+Guigolo is a personal portfolio website for **Guillermo González López**, a UX/UI designer who creates clear, sensitive, and strategic interfaces for real digital products.
+
+> La conexión real empieza donde termina lo estético.
+> 
+> _Real connection begins where aesthetics end._
+
+## What is Guigolo?
+
+**Guigolo** is not a template, not an isolated experiment, and not a generic site. It's a **living landing page** designed to communicate:
+
+- Who Guillermo is
+- How he thinks
+- How he designs
+- Why his work connects emotion with business
+
+The portfolio is built for **recruiters**, **clients**, and **people curious about well-crafted design**.
+
+## Design Philosophy
+
+The project follows these core principles:
+
+- **Conscious UX, not decorative** - Every design decision serves a purpose
+- **Emotional design without being cheesy** - Human connection through thoughtful details
+- **Soft cyberpunk aesthetic** - Sensitive technology, not aggressive
+- **Micro-details that accompany, not obstruct** - Subtle animations and interactions
+- **Visual decisions aligned with intention and business** - Design that serves goals
+
+<Info>
+  Designing well isn't just about looking good. It's about **making something feel right**.
+</Info>
+
+## Key Features
+
+Guigolo includes several sophisticated features that make it stand out:
+
+### Portfolio Showcase
+- Featured project cards with detailed case studies
+- Responsive grid layout optimized for all devices
+- Custom typography system with Unbounded and Anta fonts
+
+### Gamification System
+The portfolio includes an innovative gamification layer that tracks user engagement:
+
+- **Achievement system** - Unlock achievements like `first_contact`, `almost_talked`, and `took_courage`
+- **Mission tracking** - Complete missions as you explore the site
+- **Real-time triggers** - User actions trigger gamification events based on scroll depth, form interactions, and dwell time
+
+<Tip>
+  The gamification system is implemented with custom React hooks and stores located in `components/gamification/` (app/page.tsx:14-17).
+</Tip>
+
+### Contact Forms
+- Formspree integration for backend-free form handling
+- Smart origin tracking to remember where users came from
+- Session-based success states to prevent duplicate submissions
+
+### SEO & Analytics
+- Comprehensive Open Graph metadata configured
+- Google Analytics integration (production only)
+- Hotjar analytics for user behavior tracking
+- JSON-LD structured data for search engines
+- Vercel Analytics for performance monitoring
+
+### Responsive Design
+- Mobile-first approach with custom breakpoints (sm to 4xl)
+- Custom Tailwind configuration with design tokens
+- Blueprint-style SVG icons and navigation elements
+
+## Target Audience
+
+This documentation is designed for:
+
+- **Developers** who want to understand the technical architecture
+- **Contributors** looking to fork or extend the portfolio
+- **Designers** interested in the implementation details
+- **Recruiters** evaluating the technical capabilities demonstrated
+
+## Technology Stack
+
+Guigolo is built with modern web technologies:
+
+- **Next.js 16.1.1** with App Router
+- **React 19.2.3** for component architecture
+- **TypeScript 5** for type safety
+- **Tailwind CSS 3.4.17** for styling with custom design tokens
+- **Embla Carousel** for project galleries
+- **Vercel Analytics** for performance insights
+- **Formspree** for contact form management (no backend required)
+
+## Next Steps
+
+Ready to get started? Check out the [Quickstart](/quickstart) guide to run Guigolo locally in minutes, or dive into the detailed [Installation](/installation) requirements.
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+  Get Guigolo running locally with step-by-step instructions
+</Card>

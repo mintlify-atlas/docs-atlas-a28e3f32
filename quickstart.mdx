@@ -1,80 +1,210 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get Guigolo running locally in minutes with this step-by-step guide
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will help you clone, install, and run the Guigolo portfolio locally on your development machine.
 
-### Step 1: Set up your local environment
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- **Node.js 20+** installed on your machine
+- **npm**, **yarn**, or **pnpm** package manager
+- **Git** for cloning the repository
+- A code editor (VS Code, Cursor, or similar)
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the Guigolo source code from GitHub:
+
+    ```bash
+    git clone https://github.com/yourusername/guigolo.git
+    cd guigolo
+    ```
+
+    <Note>
+      Replace `yourusername/guigolo` with the actual repository URL if you're forking from a different source.
+    </Note>
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required dependencies using your preferred package manager:
+
+    <CodeGroup>
+      ```bash npm
+      npm install
+      ```
+
+      ```bash yarn
+      yarn install
+      ```
+
+      ```bash pnpm
+      pnpm install
+      ```
+    </CodeGroup>
+
+    This will install all dependencies from package.json, including:
+
+    - `next@16.1.1` - Next.js framework
+    - `react@19.2.3` and `react-dom@19.2.3` - React library
+    - `@vercel/analytics@^1.6.1` - Analytics integration
+    - `embla-carousel-react@^8.6.0` - Carousel component
+    - `tailwindcss@^3.4.17` - Styling framework
+    - TypeScript and ESLint dev tools
+
+    <Info>
+      The installation typically takes 1-2 minutes depending on your internet connection and machine speed.
+    </Info>
+  </Step>
+
+  <Step title="Run the Development Server">
+    Start the Next.js development server:
+
+    <CodeGroup>
+      ```bash npm
+      npm run dev
+      ```
+
+      ```bash yarn
+      yarn dev
+      ```
+
+      ```bash pnpm
+      pnpm dev
+      ```
+    </CodeGroup>
+
+    The development server will start on `http://localhost:3000` by default.
+
+    ```bash
+    ▲ Next.js 16.1.1
+    - Local:        http://localhost:3000
+    - Environments: .env.local
+
+    ✓ Ready in 2.3s
+    ```
+
+    <Tip>
+      Next.js 16 features turbopack for faster builds. The first load might take a few seconds, but subsequent hot reloads are nearly instant.
+    </Tip>
+  </Step>
+
+  <Step title="Explore the Application">
+    Open your browser and navigate to `http://localhost:3000`. You should see:
+
+    - **Hero section** with animated gradient background
+    - **Blueprint-style navigation** with SVG icons
+    - **Services accordion** showcasing UX/UI offerings
+    - **Featured projects** section with case studies
+    - **Process timeline** explaining the design workflow
+    - **About section** with personal background
+    - **Contact form** powered by Formspree
+    - **FAQ section** with common questions
+
+    <Note>
+      The gamification system (achievements and missions) is active in development mode. Try scrolling through sections and interacting with forms to trigger achievements!
+    </Note>
+  </Step>
+
+  <Step title="Understand the Folder Structure">
+    Familiarize yourself with the project organization:
+
+    ```txt
+    guigolo/
+    ├── app/
+    │   ├── layout.tsx          # Root layout with fonts & analytics
+    │   ├── page.tsx            # Home page with all sections
+    │   ├── robots.ts           # SEO robots configuration
+    │   ├── sitemap.ts          # XML sitemap generation
+    │   └── what-is-guigolo/    # About page route
+    ├── components/
+    │   ├── Navbar.tsx          # Main navigation component
+    │   ├── Hero.tsx            # Hero section
+    │   ├── Contact.tsx         # Contact form with Formspree
+    │   ├── ProjectsSection.tsx # Featured projects grid
+    │   ├── gamification/       # Achievement & mission system
+    │   ├── projects/           # Project data and components
+    │   └── ui/                 # Reusable UI components
+    ├── public/
+    │   ├── brand/              # Logo and brand assets
+    │   ├── hero/               # Hero section SVGs
+    │   └── og/                 # Open Graph images
+    ├── styles/
+    │   └── globals.css         # Global styles & Tailwind imports
+    ├── tailwind.config.js      # Tailwind customization
+    ├── next.config.ts          # Next.js configuration with redirects
+    └── package.json            # Dependencies and scripts
+    ```
+
+    <Accordion title="Key Files Explained">
+      - **app/layout.tsx** (app/layout.tsx:1) - Configures Google Fonts (Unbounded & Anta), metadata, analytics (Google Analytics, Hotjar, Vercel Analytics), and JSON-LD structured data
+      - **app/page.tsx** (app/page.tsx:1) - Composes all homepage sections including gamification boot components
+      - **components/Contact.tsx** (components/Contact.tsx:14) - Formspree endpoint at `https://formspree.io/f/xpqqzvro` with achievement unlocking on form submission
+      - **next.config.ts** (next.config.ts:1) - Defines 30+ redirect rules for `/go/*` UTM tracking links
+      - **tailwind.config.js** (tailwind.config.js:1) - Custom color palette, typography scale, and responsive breakpoints
+    </Accordion>
+  </Step>
+
+  <Step title="Explore Key Routes">
+    The application has the following main routes:
+
+    - **`/`** - Homepage with all portfolio sections
+    - **`/what-is-guigolo`** - About page explaining the project philosophy
+    - **`/go/*`** - UTM tracking redirects (e.g., `/go/github`, `/go/figma`)
+
+    All `/go/*` routes redirect to the homepage with specific UTM parameters for analytics tracking (next.config.ts:4-197).
+
+    <Warning>
+      The `/que-es-guigolo` route permanently redirects to `/what-is-guigolo` (next.config.ts:6-10). This was a localization change from Spanish to English.
+    </Warning>
+  </Step>
+</Steps>
+
+## What's Next?
+
+Now that you have Guigolo running locally, you can:
+
+- **Customize the content** - Edit project data in `components/projects/project.data.ts`
+- **Modify styling** - Update Tailwind config or component styles
+- **Add features** - Extend the gamification system or add new sections
+- **Configure analytics** - Set up environment variables for Google Analytics and Hotjar
+
+For detailed environment variable setup and production deployment, see the [Installation](/installation) guide.
+
+## Common Issues
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+  <Accordion title="Port 3000 already in use">
+    If port 3000 is occupied, Next.js will automatically try port 3001. You can also specify a custom port:
+
+    ```bash
+    npm run dev -- -p 3001
+    ```
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+
+  <Accordion title="Module not found errors">
+    Delete `node_modules` and `package-lock.json`, then reinstall:
+
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+
+  <Accordion title="TypeScript errors on first run">
+    Next.js 16 may show TypeScript errors during the first build. These usually resolve after the initial compilation completes. If errors persist, check your TypeScript version:
+
+    ```bash
+    npm list typescript
+    # Should be TypeScript 5.x
+    ```
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+## Need Help?
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+If you encounter issues not covered here, check the [Installation](/installation) guide for more detailed troubleshooting, or review the source code comments for implementation details.

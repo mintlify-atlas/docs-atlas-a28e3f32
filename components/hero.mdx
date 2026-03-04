@@ -1,0 +1,231 @@
+---
+title: Hero Component
+description: Landing hero section with animated gradient text, floating SVG layers, and responsive CTAs
+---
+
+## Overview
+
+The `Hero` component is the main landing section of the portfolio, featuring:
+
+- Animated gradient text for the main headline
+- Floating SVG character layers with staggered animations
+- Responsive text sizing using clamp()
+- Dual CTA buttons (Contact and Projects)
+- Two-column grid layout (content left, visual right)
+
+## File Location
+
+```
+~/workspace/source/components/Hero.tsx
+```
+
+## Component Structure
+
+```tsx
+"use client";
+
+import Link from "next/link";
+import ContactLink from "@/components/ui/ContactLink";
+
+export default function Hero() {
+  return (
+    <section id="home" className="relative">
+      {/* Left: Text content */}
+      {/* Right: Visual scene with floating SVG layers */}
+    </section>
+  );
+}
+```
+
+## Features
+
+### 1. Animated Gradient Text
+
+The main headline uses a gradient animation class:
+
+```tsx
+<h1 className="font-semibold tracking-tight leading-[125%] text-neutral-white ...">
+  <span className="text-gradient-anim">Diseñador UX/UI</span>
+  que convierte ideas en productos claros
+</h1>
+```
+
+### 2. Floating SVG Layers
+
+Four colored character SVGs float with different animation speeds:
+
+```typescript
+type Layer = {
+  src: string;
+  className: string;
+  float: string; // animation class
+};
+
+const layers: Layer[] = [
+  {
+    src: "/brand/hero/char-blue.svg",
+    className: "left-[-2%] top-[46%] w-[30%]",
+    float: "float-slow-1",
+  },
+  {
+    src: "/brand/hero/char-pink.svg",
+    className: "left-[28%] top-[30%] w-[16%]",
+    float: "float-slow-2",
+  },
+  {
+    src: "/brand/hero/char-green.svg",
+    className: "right-[17%] top-[12%] w-[37%]",
+    float: "float-slow-3",
+  },
+  {
+    src: "/brand/hero/char-yellow.svg",
+    className: "right-[16.3%] bottom-[19%] w-[29.5%]",
+    float: "float-slow-4",
+  },
+];
+```
+
+Each layer is positioned absolutely and animated:
+
+```tsx
+{layers.map((l) => (
+  <img
+    key={l.src}
+    src={l.src}
+    alt=""
+    draggable={false}
+    className={[
+      "absolute select-none will-change-transform",
+      l.float,
+      l.className,
+    ].join(" ")}
+  />
+))}
+```
+
+### 3. Responsive Text Sizing
+
+Uses fluid typography with `clamp()` for optimal sizing across viewports:
+
+```css
+text-[clamp(1.5rem,3.75vw,3rem)] 
+md:text-[clamp(1.25rem,3.25vw,3.75rem)] 
+lg:text-[clamp(1.5rem,2.75vw,3rem)] 
+xl:text-[clamp(2rem,2.25vw,3.5rem)] 
+2xl:text-[clamp(3rem,2vw,4.75rem)]
+```
+
+### 4. Call-to-Action Buttons
+
+Two CTAs with different visual treatments:
+
+```tsx
+<div className="mt-7 flex flex-wrap gap-4 justify-center lg:justify-start">
+  {/* Primary CTA */}
+  <ContactLink
+    ctaId="hero-contact"
+    className="rounded-md bg-accent-lime px-6 py-3 text-black font-medium shadow-[0_0_0_2px_rgba(0,0,0,0.25)] w-full md:w-auto"
+  >
+    Contactar
+  </ContactLink>
+
+  {/* Secondary CTA */}
+  <Link
+    href="#projects"
+    className="rounded-md border border-neutral-white/20 px-6 py-3 text-neutral-white/90 hover:border-neutral-white/40 transition w-full md:w-auto"
+  >
+    Ver proyectos
+  </Link>
+</div>
+```
+
+## Layout Structure
+
+### Desktop (lg:grid-cols-2)
+
+- **Left column**: Headline, description, CTAs (text-left alignment)
+- **Right column**: Scene SVG with floating character layers
+
+### Mobile (grid-cols-1)
+
+- Content and visual stack vertically
+- Text center-aligned
+- CTAs full-width
+
+## Visual Scene
+
+The right side features a layered SVG composition:
+
+```tsx
+<div className="relative w-full aspect-[1/1.05] md:aspect-[1/1] lg:aspect-[1/1.1]">
+  {/* Base scene */}
+  <img
+    src="/brand/hero/scene.svg"
+    alt=""
+    aria-hidden="true"
+    draggable={false}
+    className="absolute inset-0 h-full w-full object-contain select-none"
+  />
+
+  {/* Floating character layers */}
+  {layers.map((l) => (
+    <img key={l.src} src={l.src} ... />
+  ))}
+</div>
+```
+
+## Padding & Spacing
+
+Responsive horizontal padding:
+
+```
+px-6 
+md:pl-[48px] md:pr-[48px] 
+lg:pl-[96px] 
+xl:pl-[128px] 
+2xl:pl-[144px] 
+3xl:pl-[244px] 
+4xl:pl-[320px]
+```
+
+Vertical spacing:
+
+```
+pt-24 sm:pt-18 md:pt-8 lg:pt-8 xl:pt-4 2xl:pt-3 3xl:pt-2 4xl:pt-2
+pb-12
+```
+
+## Assets Required
+
+- `/brand/hero/scene.svg` - Base scene background
+- `/brand/hero/char-blue.svg` - Blue floating character
+- `/brand/hero/char-pink.svg` - Pink floating character  
+- `/brand/hero/char-green.svg` - Green floating character
+- `/brand/hero/char-yellow.svg` - Yellow floating character
+
+## Usage Example
+
+```tsx
+import Hero from "@/components/Hero";
+
+export default function HomePage() {
+  return (
+    <main>
+      <Hero />
+      {/* Other sections */}
+    </main>
+  );
+}
+```
+
+## Key CSS Classes
+
+- `text-gradient-anim` - Animated gradient text effect
+- `float-slow-1` through `float-slow-4` - Staggered float animations
+- `will-change-transform` - Optimizes layer animation performance
+
+## Accessibility
+
+- Section has `id="home"` for anchor navigation
+- Decorative SVGs use `aria-hidden="true"`
+- All images have `draggable={false}` and `select-none` for better UX

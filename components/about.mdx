@@ -1,0 +1,426 @@
+---
+title: About Section
+description: Grid-based about section with SmallCard components, photo display, and integrated documentation slider carousel
+---
+
+## Overview
+
+The `SectionAbout` component showcases personal information through:
+
+- Grid layout with 5 SmallCard components
+- Central photo display
+- "Framework de habilidades" (Skills framework) theme
+- AboutDocsSliderCard carousel integration
+- Value proposition with CTA
+
+## File Locations
+
+```
+~/workspace/source/components/SectionAbout.tsx
+~/workspace/source/components/about/AboutDocsSliderCard.tsx
+```
+
+## SmallCard Component
+
+### Props
+
+<ParamField path="chip" type="string" required>
+  Label displayed at the top of the card
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Card heading
+</ParamField>
+
+<ParamField path="desc" type="string" required>
+  Card description text
+</ParamField>
+
+<ParamField path="mascotSrc" type="string">
+  Optional mascot image path (positioned bottom-right)
+</ParamField>
+
+<ParamField path="watermark" type="string">
+  Optional large background text
+</ParamField>
+
+<ParamField path="className" type="string">
+  Additional CSS classes for the card container
+</ParamField>
+
+<ParamField path="chipClassName" type="string">
+  Additional CSS classes for the chip
+</ParamField>
+
+<ParamField path="titleClassName" type="string">
+  Additional CSS classes for the title
+</ParamField>
+
+<ParamField path="descClassName" type="string">
+  Additional CSS classes for the description
+</ParamField>
+
+<ParamField path="watermarkClassName" type="string">
+  Additional CSS classes for the watermark
+</ParamField>
+
+### SmallCard Structure
+
+```tsx
+function SmallCard({
+  chip,
+  title,
+  desc,
+  mascotSrc,
+  watermark,
+  className,
+  // ... other props
+}: SmallCardProps) {
+  return (
+    <div className="relative h-full overflow-hidden border border-dashed border-[#ededed1a] bg-neutral-black-900/35 px-10 py-10">
+      {/* Watermark (large background text) */}
+      {watermark && (
+        <div className="pointer-events-none absolute inset-x-10 top-6 left-0 select-none text-3xl font-semibold tracking-[0.05em] text-accent-cyan-10 opacity-30 lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl 4xl:text-8xl">
+          {watermark}
+        </div>
+      )}
+
+      <div className="flex flex-col align-items-self-end">
+        {/* Chip label */}
+        <div className="inline-flex w-fit border border-[#ededed1a] px-4 py-2 text-[11px] tracking-widest text-neutral-white/70">
+          {chip}
+        </div>
+
+        {/* Icon */}
+        <div className="mt-4">
+          <Image
+            src="/brand/about/icon-blueprint.svg"
+            alt=""
+            width={32}
+            height={32}
+            className="h-auto w-[32px] md:w-[32px] lg:w-[40px] xl:w-[48px] 2xl:w-[72px]"
+          />
+        </div>
+
+        {/* Title */}
+        <h3 className="mt-7 heading-h3">
+          {title}
+        </h3>
+
+        {/* Description */}
+        <p className="mt-4 text-[clamp(0.95rem,1.15vw,1.125rem)] leading-relaxed xl:text-[clamp(1.05rem,.95vw,1.2rem)] xl:leading-relaxed 2xl:text-[clamp(1.25rem,1.2vw,1.5rem)] text-neutral-white/70">
+          {desc}
+        </p>
+      </div>
+
+      {/* Mascot (optional) */}
+      {mascotSrc && (
+        <div className="absolute bottom-6 right-8">
+          <Image src={mascotSrc} alt="" width={76} height={76} />
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Section Header
+
+```tsx
+<div className="text-center">
+  <div className="text-[12px] tracking-widest text-accent-lime/80">
+    FRAMEWORK DE HABILIDADES
+  </div>
+
+  <h2 className="mt-3 heading-h2 tracking-tight">
+    EL NÚCLEO QUE DEFINE MI MANERA DE DISEÑAR
+  </h2>
+
+  <p className="
+    max-w-[680px] 
+    xl:max-w-[768px] 
+    2xl:max-w-[980px]
+    3xl:max-w-[1024px]
+    4xl:max-w-[1256px] 
+    mx-auto 
+    mt-3 
+    text-neutral-white/65 
+    text-[clamp(0.95rem,1.15vw,1.125rem)]
+    text-center
+  ">
+    Soy diseñador UX/UI y transformo sensibilidad y estrategia en interfaces suaves,
+    claras y sencillas para el usuario.
+  </p>
+</div>
+```
+
+## Grid Layout
+
+### Row 1: Three Columns
+
+```tsx
+<div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  {/* Left: FEELING NODE */}
+  <div className="mt-0 lg:mt-8 xl:mt-8 2xl:mt-10 3xl:mt-[6rem] 4xl:mt-[12rem]">
+    <SmallCard
+      chip="FEELING NODE"
+      title="MI PERSONALIDAD"
+      desc="Soy curioso, sensible, empático, entregado, intuitivo, agradecido, detallista, creativo y auténtico."
+      watermark="FEELING NODE"
+      className="lg:mt-10 text-left lg:text-right"
+    />
+  </div>
+
+  {/* Center: Photo */}
+  <div className="bg-neutral-black-900/35">
+    <Image
+      src="/brand/about/about-photo-guigolo.png"
+      alt="Guigolo"
+      width={900}
+      height={900}
+      className="h-full w-full object-cover"
+      sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
+      priority
+    />
+  </div>
+
+  {/* Right: VISUAL FLOW UNIT */}
+  <div className="mt-0 lg:mt-8 xl:mt-8 2xl:mt-10 3xl:mt-[6rem] 4xl:mt-[12rem]">
+    <SmallCard
+      chip="VISUAL FLOW UNIT"
+      title="MI ESTILO"
+      desc="Soy coherente, directo, minimalista, expresivo, emocional, ingenioso, observador y propositivo."
+      watermark="VISUAL FLOW UNIT"
+      className="lg:mt-10"
+    />
+  </div>
+</div>
+```
+
+### Row 2: Three More Cards
+
+```tsx
+{/* HUMAN INPUT FILTER */}
+<SmallCard
+  chip="HUMAN INPUT FILTER"
+  title="MIS GUSTOS"
+  desc="El café, el chocolate, los gatos, los videojuegos, lo romántico y las ideas que nacen en silencio."
+  watermark="HUMAN INPUT FILTER"
+  className="lg:mt-10 text-left lg:text-right"
+/>
+
+{/* CORE SIGNAL SYNC */}
+<SmallCard
+  chip="CORE SIGNAL SYNC"
+  title="MI PROPÓSITO"
+  desc="Conectar con las emociones de los demás y convertirlas en experiencias únicas."
+  watermark="CORE SIGNAL SYNC"
+  className="border md:text-center border-dashed lg:border-none"
+/>
+
+{/* SENSE-LAYER v4.2 */}
+<SmallCard
+  chip="SENSE-LAYER v4.2"
+  title="MI MENTALIDAD"
+  desc="Consciente, reflexivo, equilibrado, responsable, soñador, perseverante, en construcción constante."
+  watermark="SENSE-LAYER v4.2"
+  className="lg:mt-10"
+/>
+```
+
+## Value Proposition Section
+
+```tsx
+<div className="grid grid-cols-1 lg:grid-cols-3">
+  {/* Value Unique card */}
+  <div className="relative flex flex-col overflow-hidden justify-start sm:justify-center lg:mt-10 lg:text-right border border-neutral-white/10 bg-neutral-black-900/35 px-10 py-10 lg:col-span-1 order-2 md:order-1">
+    <div className="inline-flex border-2 sm:self-center border-[#ededed1a] px-4 py-2 text-[11px] tracking-widest text-neutral-white/70 w-fit">
+      VALUE UNIQUE
+    </div>
+
+    <h3 className="mt-7 heading-h3 sm:text-center">
+      MI PROPUESTA DE VALOR
+    </h3>
+
+    <p className="mt-4 text-left sm:text-center text-[clamp(0.95rem,1.15vw,1.125rem)] leading-relaxed xl:text-[clamp(1.05rem,.95vw,1.2rem)] xl:leading-relaxed 2xl:text-[clamp(1.25rem,1.2vw,1.5rem)] text-neutral-white/70">
+      Me enfoco en crear productos útiles y estratégicos que impulsen tus resultados desde el primer clic.
+    </p>
+
+    {/* CTA */}
+    <div className="mt-8 flex flex-col items-baseline sm:items-center gap-4">
+      <a
+        href="#contacto"
+        className="inline-flex justify-start items-start sm:items-center sm:justify-center rounded-md bg-accent-lime px-10 py-3 text-[12px] font-semibold tracking-widest text-black shadow-[0_0_0_2px_rgba(0,0,0,0.25)]"
+      >
+        CONTACTAR <span className="ml-2">↗</span>
+      </a>
+    </div>
+  </div>
+
+  {/* Documentation carousel */}
+  <AboutDocsSliderCard />
+</div>
+```
+
+## AboutDocsSliderCard Component
+
+### Features
+
+- Embla carousel with autoplay (30.2s delay)
+- Pause on hover
+- Dot navigation
+- Image and tag display
+
+### Structure
+
+```tsx
+export default function AboutDocsSliderCard() {
+  const autoplay = useMemo(
+    () =>
+      Autoplay({
+        delay: 30200,
+        stopOnInteraction: false,
+        stopOnMouseEnter: true,
+      }),
+    []
+  );
+
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, align: "start" },
+    [autoplay]
+  );
+
+  return (
+    <div className="relative overflow-hidden lg:mt-10 border border-neutral-white/10 bg-neutral-black-900/35 px-10 py-10 cursor-grab active:cursor-grabbing order-2 sm:order-1 lg:col-span-2">
+      <div className="mt-8">
+        <div ref={emblaRef} className="overflow-hidden">
+          <div className="flex">
+            {slides.map((s) => (
+              <div key={s.title} className="min-w-0 flex-[0_0_100%] pr-6">
+                <div className="mt-4 flex flex-col items-center">
+                  {/* Title */}
+                  <div className="heading-h3 text-center">
+                    {s.title}
+                  </div>
+
+                  {/* Description */}
+                  <div className="mt-2 text-neutral-white/70 text-center">
+                    {s.desc}
+                  </div>
+
+                  {/* Image */}
+                  <div className="relative w-full mt-7 h-[304px] overflow-hidden border-neutral-white/10 bg-neutral-black-900/40">
+                    <Image
+                      src={s.image}
+                      alt=""
+                      fill
+                      className="object-contain w-full aspect-ratio-[16/9]"
+                      sizes="(max-width: 1024px) 90vw, 700px"
+                    />
+                  </div>
+
+                  {/* Tags */}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {s.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full border border-neutral-white/10 bg-neutral-black-900/30 px-3 py-1 text-[11px] text-neutral-white/70"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Dot navigation */}
+        <div className="mt-5 flex items-center gap-2">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={[
+                "h-4 w-4 rounded-full border border-neutral-white/20 transition",
+                i === selected ? "bg-accent-lime" : "bg-transparent",
+              ].join(" ")}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Data Structure
+
+Slides are imported from `AboutDocsSliderCard.data.ts`:
+
+```typescript
+type Slide = {
+  title: string;
+  desc: string;
+  image: string;
+  tags: string[];
+};
+```
+
+## Responsive Padding
+
+```css
+px-4 
+pb-24 
+pt-[120px] 
+sm:pt-[48px] 
+sm:px-[1rem] 
+md:px-[48px] 
+lg:px-[96px] 
+xl:px-[128px] 
+2xl:px-[144px] 
+3xl:px-[244px] 
+4xl:px-[320px]
+```
+
+## Grid Breakpoints
+
+| Breakpoint | Layout |
+|------------|--------|
+| Mobile | Single column, cards stack |
+| `sm:` | 2 columns |
+| `lg:` | 3 columns for main grid |
+
+## Assets Required
+
+- `/brand/about/icon-blueprint.svg` - Blueprint icon for all cards
+- `/brand/about/about-photo-guigolo.png` - Central photo
+- Mascot images (currently commented out):
+  - `/brand/about/mascot-orange.svg`
+  - `/brand/about/mascot-banana.svg`
+  - `/brand/about/mascot-paper.svg`
+  - `/brand/about/mascot-purple.svg`
+
+## Usage Example
+
+```tsx
+import SectionAbout from "@/components/SectionAbout";
+
+export default function HomePage() {
+  return (
+    <main>
+      {/* Other sections */}
+      <SectionAbout />
+    </main>
+  );
+}
+```
+
+## Key Design Patterns
+
+- **Watermark text**: Large, semi-transparent background labels
+- **Dashed borders**: `border-dashed border-[#ededed1a]`
+- **Staggered vertical margins**: Different `mt-` values create visual rhythm
+- **Chip labels**: Consistent technical aesthetic across cards
+- **Responsive text alignment**: Left on mobile, varies on desktop

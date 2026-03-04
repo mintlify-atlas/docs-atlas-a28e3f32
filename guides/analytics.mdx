@@ -1,0 +1,355 @@
+---
+title: Analytics Setup
+description: Configure Google Analytics, Hotjar, and Vercel Analytics to track your portfolio performance
+---
+
+## Overview
+
+Guigolo includes built-in support for three analytics services:
+
+- **Google Analytics** - Comprehensive traffic and user behavior tracking
+- **Hotjar** - Session recordings and heatmaps
+- **Vercel Analytics** - Real-time visitor and performance metrics
+
+All analytics scripts are conditionally loaded only in production to avoid tracking development traffic.
+
+## Google Analytics Setup
+
+Google Analytics provides detailed insights into your portfolio traffic, user behavior, and acquisition channels.
+
+<Steps>
+  <Step title="Create GA4 property">
+    1. Go to [Google Analytics](https://analytics.google.com)
+    2. Click Admin (gear icon) → Create Property
+    3. Enter your property name and configure settings
+    4. Create a Web data stream
+  </Step>
+  
+  <Step title="Get your Measurement ID">
+    1. In your data stream settings, find the Measurement ID
+    2. It looks like `G-XXXXXXXXXX`
+    3. Copy this ID
+  </Step>
+  
+  <Step title="Add to environment variables">
+    Add your Measurement ID to your environment variables:
+    
+    **Local development (.env.local):**
+    ```bash
+    NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+    ```
+    
+    **Vercel:**
+    1. Go to Project Settings → Environment Variables
+    2. Add `NEXT_PUBLIC_GA_ID` with your measurement ID
+    3. Select Production, Preview, and Development
+    4. Save and redeploy
+  </Step>
+  
+  <Step title="Verify installation">
+    After deploying to production:
+    1. Visit your live site
+    2. Open Google Analytics → Reports → Realtime
+    3. You should see your visit in real-time
+  </Step>
+</Steps>
+
+### Implementation Details
+
+Google Analytics is integrated in `app/layout.tsx:93-113`:
+
+```tsx app/layout.tsx
+const isProd = process.env.VERCEL_ENV === "production";
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+
+{isProd && GA_ID ? (
+  <>
+    <Script
+      src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+      strategy="afterInteractive"
+    />
+    <Script
+      id="ga-init"
+      strategy="afterInteractive"
+      dangerouslySetInnerHTML={{
+        __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_ID}');
+        `,
+      }}
+    />
+  </>
+) : null}
+```
+
+<Note>
+The `strategy="afterInteractive"` ensures analytics scripts load after the page becomes interactive, optimizing performance.
+</Note>
+
+## Hotjar Setup
+
+Hotjar provides heatmaps, session recordings, and user feedback tools to understand how visitors interact with your portfolio.
+
+<Steps>
+  <Step title="Create Hotjar account">
+    1. Sign up at [Hotjar](https://www.hotjar.com)
+    2. Create a new site
+    3. Enter your domain name
+  </Step>
+  
+  <Step title="Get your Site ID">
+    1. In Sites & Organizations, find your site
+    2. Copy the Site ID (numeric value)
+    3. Note the script version (usually `6`)
+  </Step>
+  
+  <Step title="Configure environment variables">
+    Add both Hotjar variables:
+    
+    **Local development (.env.local):**
+    ```bash
+    NEXT_PUBLIC_HJ_ID=1234567
+    NEXT_PUBLIC_HJ_SV=6
+    ```
+    
+    **Vercel:**
+    1. Add `NEXT_PUBLIC_HJ_ID` with your site ID
+    2. Add `NEXT_PUBLIC_HJ_SV` with value `6` (or current version)
+    3. Select all environments and save
+  </Step>
+  
+  <Step title="Verify installation">
+    1. Deploy to production
+    2. Visit your site
+    3. Open browser console and look for Hotjar initialization
+    4. Check Hotjar dashboard for the green "Tracking" status
+  </Step>
+</Steps>
+
+### Implementation Details
+
+Hotjar is integrated in `app/layout.tsx:115-133`:
+
+```tsx app/layout.tsx
+const HJ_ID = process.env.NEXT_PUBLIC_HJ_ID;
+const HJ_SV = process.env.NEXT_PUBLIC_HJ_SV || "6";
+
+{isProd && HJ_ID ? (
+  <Script
+    id="hotjar-init"
+    strategy="afterInteractive"
+    dangerouslySetInnerHTML={{
+      __html: `
+        (function(h,o,t,j,a,r){
+          h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+          h._hjSettings={hjid:${HJ_ID},hjsv:${HJ_SV}};
+          a=o.getElementsByTagName('head')[0];
+          r=o.createElement('script');r.async=1;
+          r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+          a.appendChild(r);
+        })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+      `,
+    }}
+  />
+) : null}
+```
+
+<Tip>
+The `HJ_SV` variable has a default value of `"6"`, so you only need to set `NEXT_PUBLIC_HJ_ID` if you're using the current script version.
+</Tip>
+
+## Vercel Analytics
+
+Vercel Analytics provides real-time visitor metrics and Web Vitals tracking without cookies or configuration.
+
+### Setup
+
+Vercel Analytics is already integrated via the `@vercel/analytics` package in `app/layout.tsx:4,135`:
+
+```tsx app/layout.tsx
+import { Analytics } from "@vercel/analytics/next";
+
+// In the component:
+<Analytics />
+```
+
+<Steps>
+  <Step title="Enable in Vercel dashboard">
+    1. Go to your project in Vercel
+    2. Navigate to Analytics tab
+    3. Click "Enable Analytics"
+  </Step>
+  
+  <Step title="Deploy">
+    Analytics will start tracking immediately after your next deployment.
+  </Step>
+  
+  <Step title="View data">
+    Access analytics in the Vercel dashboard:
+    - Total visitors
+    - Top pages
+    - Top referrers  
+    - Web Vitals (LCP, FID, CLS)
+  </Step>
+</Steps>
+
+### Features
+
+- **No configuration required** - Works out of the box
+- **Real-time data** - See visitors as they arrive
+- **Privacy-friendly** - No cookies, GDPR compliant
+- **Web Vitals tracking** - Monitor Core Web Vitals
+- **Unlimited events** - No quota or sampling
+
+<Note>
+Vercel Analytics is included free for all Vercel deployments. Unlike GA and Hotjar, it loads in all environments (production and preview).
+</Note>
+
+## Production-Only Loading
+
+Analytics scripts are conditionally loaded based on the environment:
+
+```tsx app/layout.tsx
+const isProd = process.env.VERCEL_ENV === "production";
+```
+
+This prevents:
+- Tracking your own development activity
+- Inflating visitor counts during testing
+- Running analytics scripts in preview deployments
+
+### Environment Detection
+
+Vercel automatically sets the `VERCEL_ENV` variable:
+
+| Environment | `VERCEL_ENV` Value | Analytics Load? |
+|-------------|-------------------|----------------|
+| Production | `production` | ✅ Yes (GA, Hotjar) |
+| Preview | `preview` | ❌ No (GA, Hotjar) |
+| Development | `development` | ❌ No (GA, Hotjar) |
+| All | Any | ✅ Yes (Vercel Analytics) |
+
+## Viewing Analytics Data
+
+### Google Analytics
+
+Key reports to monitor:
+
+**Realtime Overview**  
+See current visitors and what they're viewing right now.
+
+**Traffic Acquisition**  
+Understand where visitors come from (your redirect links, organic search, direct, etc.).
+
+**Pages and Screens**  
+Identify which projects and pages get the most views.
+
+**Events**  
+Track user interactions if you add custom event tracking.
+
+<Tip>
+The redirect rules in `next.config.ts` automatically add UTM parameters, making it easy to track which social profiles drive traffic. Check the Source/Medium report.
+</Tip>
+
+### Hotjar
+
+**Recordings**  
+Watch session replays to see how users navigate your portfolio.
+
+**Heatmaps**  
+Visual representation of where users click, move, and scroll.
+
+**Feedback**  
+Collect direct feedback from visitors (requires additional setup).
+
+<Note>
+Hotjar has different pricing tiers based on daily sessions. The free tier includes 35 daily sessions, which may be sufficient for personal portfolios.
+</Note>
+
+### Vercel Analytics
+
+Access in Vercel dashboard:
+
+**Visitors**  
+Real-time and historical visitor counts.
+
+**Top Pages**  
+Most visited pages on your site.
+
+**Top Referrers**  
+Sites sending traffic to your portfolio.
+
+**Web Vitals**  
+Performance metrics (LCP, FID, CLS, TTFB).
+
+## Best Practices
+
+<Steps>
+  <Step title="Test before deploying">
+    Verify analytics load correctly by:
+    1. Deploying to production
+    2. Visiting your site in incognito mode
+    3. Checking browser console for script loads
+    4. Confirming data appears in each dashboard
+  </Step>
+  
+  <Step title="Set up goals and conversions">
+    In Google Analytics, create goals for:
+    - Project page views
+    - External link clicks (case studies, live sites)
+    - Time on page benchmarks
+  </Step>
+  
+  <Step title="Monitor Web Vitals">
+    Use Vercel Analytics to track Core Web Vitals and maintain good performance scores.
+  </Step>
+  
+  <Step title="Respect privacy">
+    Consider adding a privacy policy that mentions:
+    - Google Analytics usage
+    - Hotjar session recording
+    - User data handling practices
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Analytics Not Loading
+
+1. **Check environment variables are set correctly**
+   ```bash
+   # In Vercel, verify variables are present
+   NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+   NEXT_PUBLIC_HJ_ID=1234567
+   ```
+
+2. **Verify you're in production**
+   Analytics only load when `VERCEL_ENV === "production"`. Preview deployments won't load GA or Hotjar.
+
+3. **Check browser console**
+   Look for:
+   - Google Analytics gtag initialization
+   - Hotjar `hj` object in window
+   - Any script loading errors
+
+4. **Clear cache and test in incognito**
+   Browser extensions and cache can block analytics scripts.
+
+### Data Not Appearing in Dashboards
+
+**Google Analytics:**
+- Wait 24-48 hours for data to populate historical reports
+- Check Realtime report for immediate verification
+- Verify the Measurement ID matches your property
+
+**Hotjar:**
+- Check tracking status shows "Active" in dashboard
+- Verify your domain matches the configured site
+- Some browsers block Hotjar by default
+
+**Vercel Analytics:**
+- Enable Analytics in Vercel project settings
+- Wait a few minutes for data to appear
+- Refresh the Analytics dashboard

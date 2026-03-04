@@ -1,0 +1,397 @@
+---
+title: Architecture
+description: Deep dive into Guigolo's Next.js 16 App Router architecture, file organization, and routing patterns
+---
+
+## Overview
+
+Guigolo is built on **Next.js 16** using the App Router paradigm with React 19. The architecture emphasizes server-side rendering, file-based routing, and a clean separation between layout, content, and interactive components.
+
+```json package.json
+{
+  "dependencies": {
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "@vercel/analytics": "^1.6.1",
+    "embla-carousel-react": "^8.6.0",
+    "embla-carousel-autoplay": "^8.6.0"
+  }
+}
+```
+
+## Project Structure
+
+The codebase follows Next.js App Router conventions with a clear separation of concerns:
+
+<Tabs>
+  <Tab title="Root Level">
+    ```
+    source/
+    ├── app/              # App Router pages and layouts
+    ├── components/       # React components
+    ├── public/           # Static assets
+    ├── next.config.ts    # Next.js configuration
+    ├── tailwind.config.js
+    └── tsconfig.json
+    ```
+  </Tab>
+  <Tab title="App Directory">
+    ```
+    app/
+    ├── layout.tsx        # Root layout (fonts, metadata, scripts)
+    ├── page.tsx          # Homepage
+    ├── globals.css       # Global styles and Tailwind
+    ├── icon.png          # Favicon
+    ├── robots.ts         # Robots.txt configuration
+    ├── sitemap.ts        # Sitemap generation
+    └── what-is-guigolo/
+        └── page.tsx      # About page explaining the brand
+    ```
+  </Tab>
+  <Tab title="Components">
+    ```
+    components/
+    ├── gamification/     # Achievement and mission system
+    ├── about/            # About section components
+    ├── faq/              # FAQ data and components
+    ├── icons/            # SVG icon components
+    ├── process/          # Process section data
+    ├── projects/         # Project data definitions
+    ├── services/         # Services data
+    ├── ui/               # Reusable UI primitives
+    ├── Hero.tsx
+    ├── Navbar.tsx
+    ├── Contact.tsx
+    └── [other sections]
+    ```
+  </Tab>
+</Tabs>
+
+## Root Layout Pattern
+
+The root layout (`app/layout.tsx`) establishes the foundation for all pages:
+
+```tsx app/layout.tsx
+import { Unbounded, Anta } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SeoJsonLd } from "../components/SeoJsonLd";
+
+const unbounded = Unbounded({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-unbounded",
+});
+
+const anta = Anta({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-anta",
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://guigolo.com"),
+  title: {
+    default: "Guigolo · Diseño centrado en usuario y negocio",
+    template: "%s | Guigolo",
+  },
+  // ... SEO configuration
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="es-MX">
+      <body className={`${unbounded.variable} ${anta.variable}`}>
+        <SeoJsonLd />
+        {children}
+        {/* Google Analytics & Hotjar only in production */}
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+```
+
+### Key Layout Features
+
+<CardGroup cols={2}>
+  <Card title="Font Loading" icon="text">
+    Uses Next.js font optimization with `next/font/google` for Unbounded and Anta fonts, exposing them as CSS variables.
+  </Card>
+  <Card title="SEO-First" icon="magnifying-glass">
+    Comprehensive metadata configuration with Open Graph, Twitter cards, and canonical URLs.
+  </Card>
+  <Card title="Analytics" icon="chart-line">
+    Conditional loading of Google Analytics and Hotjar only in production environment.
+  </Card>
+  <Card title="Structured Data" icon="code">
+    JSON-LD schema markup via `SeoJsonLd` component for enhanced search presence.
+  </Card>
+</CardGroup>
+
+## Page Architecture
+
+The homepage (`app/page.tsx`) demonstrates the single-page application pattern:
+
+```tsx app/page.tsx
+import GamificationBoot from "@/components/gamification/Boot";
+import TriggersBoot from "@/components/gamification/TriggersBoot";
+import MissionsBoot from "@/components/gamification/MissionsBoot";
+import AchievementsUI from "@/components/gamification/AchievementsUI";
+import { projects } from "@/components/projects/project.data";
+
+const featuredIds = new Set([
+  "academia-platform-project",
+  "mironline-platform-project",
+  "latiendita-puntodeventa-project",
+]);
+
+export default function Home() {
+  return (
+    <main className="bg-neutral-black-900">
+      {/* Gamification system boots first */}
+      <GamificationBoot />
+      <TriggersBoot />
+      <MissionsBoot />
+      <AchievementsUI />
+      
+      {/* Content sections */}
+      <RestoreScroll />
+      <Navbar />
+      <Hero />
+      <ServicesAccordion />
+      <ProjectsSection items={projects.filter((p) => featuredIds.has(p.id))} />
+      <Process />
+      <SectionAbout />
+      <ContactCTA />
+      <FAQSection items={FAQS} />
+      <Contact />
+      <Footer />
+    </main>
+  );
+}
+```
+
+<Note>
+  The page structure follows a deliberate order: gamification initialization happens first (invisible), followed by navigation, then content sections in a logical user journey.
+</Note>
+
+## Routing Patterns
+
+Guigolo uses Next.js redirects for UTM tracking and legacy URL support:
+
+```ts next.config.ts
+const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // Legacy URL redirect (permanent)
+      {
+        source: "/que-es-guigolo",
+        destination: "/what-is-guigolo",
+        permanent: true,
+      },
+      // Social profile redirects with UTM tracking (temporary)
+      {
+        source: '/go/figma',
+        destination: '/?utm_source=figma&utm_medium=profile&utm_campaign=profile_referral',
+        permanent: false,
+      },
+      {
+        source: '/go/github',
+        destination: '/?utm_source=github&utm_medium=profile&utm_campaign=profile_referral',
+        permanent: false,
+      },
+      // ... 30+ more social profile redirects
+    ];
+  },
+};
+```
+
+<Accordion title="Why This Redirect Pattern?">
+  The `/go/*` redirects serve as trackable short links for social media profiles. Each redirect:
+  
+  - Uses a memorable short URL (e.g., `/go/figma`)
+  - Redirects to homepage with UTM parameters
+  - Enables analytics tracking of traffic sources
+  - Maintains flexibility (temporary redirects can be updated)
+  
+  This pattern allows tracking which external profiles drive the most traffic without requiring separate landing pages.
+</Accordion>
+
+## Component Organization Philosophy
+
+Components are organized by feature and type:
+
+### Feature-Based Organization
+
+```
+components/
+├── gamification/      # Self-contained achievement system
+│   ├── Boot.tsx
+│   ├── achievementsStore.ts
+│   ├── achievementsCatalog.ts
+│   └── useAchievmentsTrigger.ts
+├── about/
+│   ├── AboutDocsSliderCard.tsx
+│   └── AboutDocsSliderCard.data.ts
+└── projects/
+    └── project.data.ts
+```
+
+### Data Co-location Pattern
+
+Data files live alongside their components:
+
+```tsx components/faq/faq.data.ts
+export const FAQS = [
+  {
+    question: "¿Trabajas remoto o presencial?",
+    answer: "Principalmente remoto...",
+  },
+  // ...
+];
+```
+
+<Note>
+  This co-location pattern keeps related code together, making it easier to understand dependencies and update features atomically.
+</Note>
+
+## Content Loading Strategy
+
+Guigolo uses a **static data import** pattern rather than CMS or API fetching:
+
+```tsx components/projects/project.data.ts
+export type ProjectItem = {
+  id: string;
+  title: string;
+  sector: string;
+  description: string[];
+  stack: string;
+  role: string;
+  image: string;
+  companyLogo: string;
+  linkUrl: string;
+  linkLabel: string;
+  access?: string;
+};
+
+export const projects: ProjectItem[] = [
+  // Project definitions
+];
+```
+
+Projects are filtered and rendered at build time:
+
+```tsx
+const featuredIds = new Set(["academia-platform-project", ...]);
+
+<ProjectsSection 
+  items={projects.filter((p) => featuredIds.has(p.id))} 
+/>
+```
+
+### Why Static Data?
+
+<CardGroup cols={2}>
+  <Card title="Performance" icon="gauge-high">
+    No runtime fetching means instant page loads with zero data latency.
+  </Card>
+  <Card title="Type Safety" icon="shield-check">
+    TypeScript definitions ensure data structure consistency at compile time.
+  </Card>
+  <Card title="Simplicity" icon="sparkles">
+    No database, no API routes, no cache invalidation complexity.
+  </Card>
+  <Card title="Version Control" icon="code-branch">
+    Content changes are tracked in Git alongside code changes.
+  </Card>
+</CardGroup>
+
+## Client vs. Server Components
+
+Guigolo strategically uses the `"use client"` directive:
+
+**Client Components:**
+- Gamification system (localStorage, event listeners)
+- Carousel controls (Embla Carousel)
+- Interactive accordions and forms
+- Achievement triggers (scroll, click tracking)
+
+**Server Components:**
+- Layout wrappers
+- Static content sections
+- Metadata generation
+- SEO components
+
+Example of client boundary:
+
+```tsx components/gamification/Boot.tsx
+"use client";
+
+import { useEffect } from "react";
+import { trackVisit, unlockAchievement } from "./achievementsStore";
+
+export default function GamificationBoot() {
+  useEffect(() => {
+    const { isNewDay } = trackVisit();
+    unlockAchievement("first_step");
+    if (isNewDay) {
+      unlockAchievement("visual_match");
+    }
+  }, []);
+  return null;
+}
+```
+
+## Asset Organization
+
+Static assets in `public/` are organized by type:
+
+```
+public/
+├── achievements/       # Achievement SVG icons
+├── brand/
+│   └── hero/          # Hero section graphics
+├── og/                # Open Graph images
+└── services/          # Service section icons
+```
+
+Assets are referenced directly:
+
+```tsx
+<Image 
+  src="/brand/hero/scene.svg" 
+  alt="" 
+  width={500} 
+  height={500} 
+/>
+```
+
+## Environment-Based Configuration
+
+Production-only features are conditionally loaded:
+
+```tsx app/layout.tsx
+const isProd = process.env.VERCEL_ENV === "production";
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+
+{isProd && GA_ID ? (
+  <Script
+    src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+    strategy="afterInteractive"
+  />
+) : null}
+```
+
+This prevents analytics pollution during development while maintaining the same codebase.
+
+## File References
+
+Key files to explore:
+
+- **Root Layout:** `app/layout.tsx:1`
+- **Homepage:** `app/page.tsx:1`
+- **Next Config:** `next.config.ts:1`
+- **Routing Redirects:** `next.config.ts:4-197`
+- **Font Setup:** `app/layout.tsx:8-18`
+- **Gamification Boot:** `components/gamification/Boot.tsx:1`

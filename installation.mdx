@@ -1,0 +1,479 @@
+---
+title: Installation
+description: Detailed installation requirements, environment setup, and troubleshooting for Guigolo
+---
+
+# Installation Guide
+
+This comprehensive guide covers all requirements, dependencies, environment configuration, and troubleshooting for running Guigolo locally or deploying to production.
+
+## System Requirements
+
+### Node.js Version
+
+Guigolo requires **Node.js 20 or higher** to run Next.js 16 and React 19.
+
+<CodeGroup>
+  ```bash Check version
+  node --version
+  # Should output v20.x.x or higher
+  ```
+
+  ```bash Install via nvm
+  nvm install 20
+  nvm use 20
+  ```
+
+  ```bash Install via official installer
+  # Download from https://nodejs.org/
+  # Choose "LTS" version
+  ```
+</CodeGroup>
+
+<Warning>
+  React 19 and Next.js 16 require Node.js 20+. Using older Node versions will cause installation and runtime errors.
+</Warning>
+
+### Package Manager Options
+
+Guigolo works with any modern package manager:
+
+| Package Manager | Version | Notes |
+|----------------|---------|-------|
+| **npm** | 9.0+ | Included with Node.js |
+| **yarn** | 1.22+ or 3.0+ | Faster installs, workspace support |
+| **pnpm** | 8.0+ | Disk space efficient, strict dependencies |
+
+The project includes a `package-lock.json` file, indicating npm was used for development. However, you can use any package manager you prefer.
+
+## Core Dependencies
+
+### Framework & Runtime
+
+From package.json (package.json:11-17):
+
+```json
+"dependencies": {
+  "next": "16.1.1",
+  "react": "19.2.3",
+  "react-dom": "19.2.3"
+}
+```
+
+- **Next.js 16.1.1** - App Router with React Server Components, built-in optimization
+- **React 19.2.3** - Latest React with improved compiler and hooks
+- **React DOM 19.2.3** - DOM rendering for React 19
+
+### UI & Interaction Libraries
+
+```json
+"dependencies": {
+  "embla-carousel-react": "^8.6.0",
+  "embla-carousel-autoplay": "^8.6.0"
+}
+```
+
+- **Embla Carousel** - Lightweight, extensible carousel for project galleries
+- **Autoplay plugin** - Automatic slideshow functionality
+
+<Info>
+  Embla Carousel is used in the Projects section to showcase case studies with smooth transitions and touch support.
+</Info>
+
+### Analytics & Monitoring
+
+```json
+"dependencies": {
+  "@vercel/analytics": "^1.6.1"
+}
+```
+
+- **Vercel Analytics** - Privacy-friendly analytics with Web Vitals tracking (app/layout.tsx:135)
+
+Additional analytics are configured via environment variables:
+- **Google Analytics** - GA4 tracking (production only)
+- **Hotjar** - Heatmaps and session recordings (production only)
+
+### Development Dependencies
+
+From package.json (package.json:19-30):
+
+```json
+"devDependencies": {
+  "@types/node": "^20",
+  "@types/react": "^19",
+  "@types/react-dom": "^19",
+  "typescript": "^5",
+  "eslint": "^9",
+  "eslint-config-next": "16.1.1",
+  "tailwindcss": "^3.4.17",
+  "autoprefixer": "^10.4.23",
+  "postcss": "^8.5.6"
+}
+```
+
+- **TypeScript 5** - Type safety and IntelliSense
+- **ESLint 9** - Code linting with Next.js preset
+- **Tailwind CSS 3.4.17** - Utility-first styling
+- **PostCSS & Autoprefixer** - CSS processing and vendor prefixes
+
+## Environment Variables
+
+Guigolo uses environment variables for analytics and feature flags. While the repository doesn't include `.env` files (no .env files found in source), you can create them for local development or production deployment.
+
+### Optional Analytics Configuration
+
+Create a `.env.local` file in the project root:
+
+```bash .env.local
+# Vercel Environment (automatic on Vercel)
+VERCEL_ENV=production
+
+# Google Analytics (optional)
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+
+# Hotjar (optional)
+NEXT_PUBLIC_HJ_ID=1234567
+NEXT_PUBLIC_HJ_SV=6
+```
+
+<Accordion title="Environment Variable Reference">
+  From app/layout.tsx (app/layout.tsx:81-85):
+
+  - **`VERCEL_ENV`** - Set to `"production"` to enable analytics in production only
+  - **`NEXT_PUBLIC_GA_ID`** - Google Analytics 4 Measurement ID (format: `G-XXXXXXXXXX`)
+  - **`NEXT_PUBLIC_HJ_ID`** - Hotjar Site ID (numeric)
+  - **`NEXT_PUBLIC_HJ_SV`** - Hotjar Snippet Version (default: `"6"`)
+
+  All analytics scripts are **conditionally loaded** based on `VERCEL_ENV === "production"` (app/layout.tsx:94-133). This prevents analytics from running during local development.
+</Accordion>
+
+<Note>
+  None of these environment variables are required for local development. The app runs fine without them - you just won't have analytics tracking.
+</Note>
+
+### Formspree Configuration
+
+The contact form uses a hardcoded Formspree endpoint (components/Contact.tsx:14):
+
+```tsx
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xpqqzvro";
+```
+
+If you're forking this project, you'll want to:
+
+1. Create your own Formspree account at https://formspree.io
+2. Set up a new form and get your unique endpoint
+3. Replace the endpoint in `components/Contact.tsx`
+
+<Tip>
+  Formspree's free tier allows 50 submissions per month, which is perfect for personal portfolios.
+</Tip>
+
+## Installation Steps
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/guigolo.git
+cd guigolo
+```
+
+### 2. Install Dependencies
+
+<CodeGroup>
+  ```bash npm
+  npm install
+  ```
+
+  ```bash yarn
+  yarn install
+  ```
+
+  ```bash pnpm
+  pnpm install
+  ```
+</CodeGroup>
+
+### 3. (Optional) Configure Environment Variables
+
+If you want analytics in development:
+
+```bash
+cp .env.example .env.local
+# Edit .env.local with your credentials
+```
+
+### 4. Run Development Server
+
+<CodeGroup>
+  ```bash npm
+  npm run dev
+  ```
+
+  ```bash yarn
+  yarn dev
+  ```
+
+  ```bash pnpm
+  pnpm dev
+  ```
+</CodeGroup>
+
+### 5. Build for Production
+
+Test the production build locally:
+
+<CodeGroup>
+  ```bash npm
+  npm run build
+  npm run start
+  ```
+
+  ```bash yarn
+  yarn build
+  yarn start
+  ```
+
+  ```bash pnpm
+  pnpm build
+  pnpm start
+  ```
+</CodeGroup>
+
+The build process will:
+1. Compile TypeScript to JavaScript
+2. Generate optimized React bundles
+3. Process and minify CSS with Tailwind
+4. Optimize images and static assets
+5. Generate static pages where possible
+
+## Tailwind CSS Configuration
+
+Guigolo uses a custom Tailwind configuration with design tokens (tailwind.config.js:1):
+
+### Custom Color Palette
+
+```js
+colors: {
+  "neutral-black-900": "#101010",
+  "neutral-black-800": "#161616",
+  "neutral-white": "#ededed",
+  "neutral-gray-600": "#3c3c3c",
+  "neutral-gray-500": "#4c4c4c",
+  "accent-lilac": "#6900ea",
+  "accent-cyan-10": "rgba(20,177,255,0.10)",
+  "accent-lime": "#C6FF00",
+}
+```
+
+### Custom Typography Scale
+
+```js
+fontSize: {
+  "heading-xl": ["36px", { lineHeight: "125%" }],
+  "heading-lg": ["24px", { lineHeight: "28.8px" }],
+  "heading-md": ["16px", { lineHeight: "19.2px" }],
+  "body-lg": ["14px", { lineHeight: "15px" }],
+  "body-md": ["12px", { lineHeight: "13.75px" }],
+  "body-sm": ["11px", { lineHeight: "12.5px" }],
+}
+```
+
+### Responsive Breakpoints
+
+```js
+screens: {
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px",
+  "2xl": "1536px",
+  "3xl": "1920px",
+  "4xl": "2560px",
+}
+```
+
+<Info>
+  The extended breakpoints (3xl, 4xl) ensure the portfolio looks great on ultra-wide monitors and 4K displays.
+</Info>
+
+## Troubleshooting
+
+### Common Installation Issues
+
+<AccordionGroup>
+  <Accordion title="npm ERR! peer dependencies">
+    React 19 and Next.js 16 may show peer dependency warnings with some packages. These are usually safe to ignore if using npm 7+:
+
+    ```bash
+    npm install --legacy-peer-deps
+    ```
+
+    Or upgrade to the latest npm:
+
+    ```bash
+    npm install -g npm@latest
+    ```
+  </Accordion>
+
+  <Accordion title="Type errors with React 19">
+    Ensure you have the correct TypeScript definitions:
+
+    ```bash
+    npm install --save-dev @types/react@^19 @types/react-dom@^19
+    ```
+
+    If errors persist, delete the `.next` build folder:
+
+    ```bash
+    rm -rf .next
+    npm run dev
+    ```
+  </Accordion>
+
+  <Accordion title="Tailwind styles not applying">
+    Ensure `globals.css` is imported in `app/layout.tsx` and that your PostCSS config is valid:
+
+    ```bash
+    # Verify PostCSS config
+    cat postcss.config.mjs
+    ```
+
+    Expected output:
+    ```js
+    export default {
+      plugins: {
+        tailwindcss: {},
+        autoprefixer: {},
+      },
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="'use client' directive errors">
+    Next.js 16 uses React Server Components by default. Components with client-side features (useState, useEffect, event handlers) must have `'use client'` at the top:
+
+    ```tsx
+    'use client';
+
+    import { useState } from 'react';
+    // ...
+    ```
+
+    Most interactive components in `components/` already have this directive.
+  </Accordion>
+
+  <Accordion title="Embla Carousel not working">
+    Ensure both carousel packages are installed:
+
+    ```bash
+    npm list embla-carousel-react embla-carousel-autoplay
+    ```
+
+    If missing:
+
+    ```bash
+    npm install embla-carousel-react embla-carousel-autoplay
+    ```
+  </Accordion>
+
+  <Accordion title="Analytics not tracking in development">
+    This is intentional! Analytics only load when `VERCEL_ENV === "production"` (app/layout.tsx:81-133).
+
+    To test analytics locally, temporarily modify the condition:
+
+    ```tsx
+    const isProd = true; // Force enable for testing
+    ```
+
+    Remember to revert this change before committing.
+  </Accordion>
+</AccordionGroup>
+
+### Build Errors
+
+<AccordionGroup>
+  <Accordion title="Module parse failed: Unexpected token">
+    This usually indicates a syntax error in TypeScript/JSX. Check:
+
+    1. All imports are correct
+    2. JSX is in `.tsx` files, not `.ts`
+    3. No mixing of CommonJS (`require`) and ESM (`import`)
+
+    Run TypeScript compiler to see detailed errors:
+
+    ```bash
+    npx tsc --noEmit
+    ```
+  </Accordion>
+
+  <Accordion title="Image optimization errors">
+    Next.js optimizes images automatically. If you encounter errors:
+
+    1. Ensure images are in `public/` directory
+    2. Use relative paths from `public/` (e.g., `/og/cover-social.png`)
+    3. Images must be valid formats (JPEG, PNG, WebP, AVIF, SVG)
+
+    Large SVGs should be placed in `public/` and imported as strings, not optimized.
+  </Accordion>
+
+  <Accordion title="Out of memory during build">
+    Increase Node.js memory limit:
+
+    ```bash
+    NODE_OPTIONS="--max-old-space-size=4096" npm run build
+    ```
+
+    Or add to `package.json` scripts:
+
+    ```json
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Deployment
+
+### Vercel (Recommended)
+
+Guigolo is optimized for Vercel deployment:
+
+1. Push your code to GitHub
+2. Import the repository in Vercel dashboard
+3. Configure environment variables (GA_ID, HJ_ID, etc.)
+4. Deploy
+
+Vercel automatically detects Next.js and configures:
+- Build command: `next build`
+- Output directory: `.next`
+- Install command: `npm install`
+
+<Tip>
+  The `VERCEL_ENV` variable is automatically set by Vercel, so analytics will work in production without manual configuration.
+</Tip>
+
+### Other Platforms
+
+For platforms like Netlify, Railway, or DigitalOcean:
+
+1. **Build command**: `npm run build`
+2. **Start command**: `npm run start`
+3. **Node version**: 20+
+4. **Environment variables**: Set `VERCEL_ENV=production` and any analytics keys
+
+<Warning>
+  Some redirects in `next.config.ts` use Next.js-specific features. Ensure your platform supports Next.js middleware and redirects.
+</Warning>
+
+## Next Steps
+
+With Guigolo installed and running:
+
+- Explore the **component architecture** in `components/`
+- Customize the **gamification system** in `components/gamification/`
+- Update **project data** in `components/projects/project.data.ts`
+- Modify **color schemes** in `tailwind.config.js`
+- Add **new routes** in the `app/` directory
+
+For a quick overview of the project structure and main features, refer back to the [Introduction](/introduction).

@@ -1,0 +1,254 @@
+---
+title: Styling with Tailwind CSS
+description: Master Tailwind CSS customization, responsive design patterns, and the Guigolo design system
+---
+
+## Tailwind Configuration
+
+Guigolo uses a customized Tailwind CSS setup defined in `tailwind.config.js`. Understanding this configuration is key to extending the design system.
+
+### Content Paths
+
+Tailwind scans these directories for class usage:
+
+```js tailwind.config.js
+content: [
+  "./app/**/*.{js,ts,jsx,tsx,mdx}",
+  "./components/**/*.{js,ts,jsx,tsx,mdx}",
+]
+```
+
+## Custom Breakpoints
+
+Guigolo extends Tailwind's default breakpoints with ultra-wide screen support:
+
+```js tailwind.config.js
+screens: {
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px",
+  "2xl": "1536px",
+  "3xl": "1920px",  // Ultra-wide displays
+  "4xl": "2560px",  // 4K displays
+}
+```
+
+### Using Custom Breakpoints
+
+Apply responsive styles using the custom breakpoints:
+
+```tsx
+<div className="text-base lg:text-lg 3xl:text-xl 4xl:text-2xl">
+  Responsive text that scales on ultra-wide displays
+</div>
+```
+
+<Tip>
+The `3xl` and `4xl` breakpoints ensure your portfolio looks great on large monitors and 4K displays, common in design and development workspaces.
+</Tip>
+
+## Custom Typography Scale
+
+Guigolo defines a custom typography scale in `tailwind.config.js:38-49`:
+
+```js tailwind.config.js
+fontSize: {
+  "heading-xl": ["36px", { lineHeight: "125%" }],
+  "heading-lg": ["24px", { lineHeight: "28.8px" }],
+  "heading-md": ["16px", { lineHeight: "19.2px" }],
+  
+  "body-lg": ["14px", { lineHeight: "15px" }],
+  "body-md": ["12px", { lineHeight: "13.75px" }],
+  "body-sm": ["11px", { lineHeight: "12.5px" }],
+  
+  "label-xl": ["32px", { lineHeight: "38.4px" }],
+  "label-sm": ["12px", { lineHeight: "14.4px" }],
+}
+```
+
+Use these in your components:
+
+```tsx
+<h2 className="text-heading-xl">Large Heading</h2>
+<p className="text-body-md">Body text with consistent spacing</p>
+<span className="text-label-sm">Small label</span>
+```
+
+## Responsive Typography Patterns
+
+Guigolo uses fluid typography with responsive breakpoints. Check `app/globals.css:22-70` for examples:
+
+```css app/globals.css
+.heading-h2 {
+  @apply font-semibold leading-[125%] text-neutral-white text-center;
+  @apply text-[clamp(1.25rem,3.75vw,2.25rem)];
+}
+
+@screen lg {
+  .heading-h2 {
+    @apply text-[clamp(1.4rem,2.75vw,2.75rem)];
+  }
+}
+
+@screen 2xl {
+  .heading-h2 {
+    @apply text-[clamp(2rem,1.2vw,3.5rem)];
+  }
+}
+```
+
+<Note>
+The `clamp()` function creates fluid typography that scales smoothly between minimum and maximum sizes based on viewport width.
+</Note>
+
+## Dark Mode Approach
+
+Guigolo uses a dark-first design with color scheme declaration:
+
+```css app/globals.css
+:root { 
+  color-scheme: dark; 
+}
+```
+
+All colors in the palette are optimized for dark backgrounds. The neutral colors provide proper contrast:
+
+```js tailwind.config.js
+colors: {
+  "neutral-black-900": "#101010",  // Darkest background
+  "neutral-black-800": "#161616",  // Secondary background
+  "neutral-white": "#ededed",      // Light text
+  "neutral-gray-600": "#3c3c3c",   // Borders, dividers
+  "neutral-gray-500": "#4c4c4c",   // Subtle elements
+}
+```
+
+## Custom Utilities
+
+Guigolo includes custom utility classes for common patterns:
+
+### Gradient Text Animation
+
+```css app/globals.css
+.text-gradient-anim {
+  background: linear-gradient(90deg, #9CFF00, #FF4FD8, #14B1FF, #9CFF00);
+  background-size: 300% 300%;
+  animation: gradientShift 26s ease-in-out infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+```
+
+Use in components:
+
+```tsx
+<h1 className="text-gradient-anim">Animated gradient text</h1>
+```
+
+### Float Animations
+
+Subtle floating animations for visual interest:
+
+```tsx
+<div className="float-slow-1">Floats gently</div>
+<div className="float-slow-2">Different timing</div>
+<div className="float-slow-3">Slower float</div>
+<div className="float-slow-4">Minimal movement</div>
+```
+
+<Tip>
+These animations respect `prefers-reduced-motion` and will disable automatically for users who prefer reduced motion.
+</Tip>
+
+## Blueprint Grid System
+
+The about section uses a custom CSS Grid layout defined in `app/globals.css:94-137`:
+
+```css app/globals.css
+.about-grid {
+  display: grid;
+  grid-template-columns: 1.12fr 0.76fr 1.12fr;
+  grid-template-rows: 340px 280px 280px;
+  gap: 0;
+}
+
+/* Cell positioning */
+.about-a { grid-column: 1; grid-row: 1; }
+.about-b { grid-column: 2; grid-row: 1; }
+.about-c { grid-column: 3; grid-row: 1; }
+/* ... more cells */
+```
+
+On mobile, the grid collapses to a single column:
+
+```css
+@media (max-width: 1023px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+}
+```
+
+## Extending the Design System
+
+### Adding Custom Colors
+
+Extend the color palette in `tailwind.config.js`:
+
+```js tailwind.config.js
+extend: {
+  colors: {
+    // Add your custom colors
+    "brand-primary": "#yourcolor",
+    "brand-secondary": "#yourcolor",
+  }
+}
+```
+
+### Adding Custom Spacing
+
+```js tailwind.config.js
+extend: {
+  spacing: {
+    '128': '32rem',
+    '144': '36rem',
+  }
+}
+```
+
+### Creating Custom Components
+
+Add reusable component classes in `app/globals.css`:
+
+```css app/globals.css
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-accent-lilac text-neutral-white;
+    @apply rounded-lg font-semibold transition-all;
+    @apply hover:bg-opacity-90 active:scale-95;
+  }
+}
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Use custom scale first">
+    Before adding new utilities, check if existing custom classes like `text-heading-lg` or `text-body-md` meet your needs.
+  </Step>
+  
+  <Step title="Maintain responsive consistency">
+    When adding responsive styles, follow the established breakpoint pattern: base → `lg:` → `2xl:` → `3xl:` → `4xl:`
+  </Step>
+  
+  <Step title="Test on multiple screens">
+    Verify your changes look good on mobile, tablet, desktop, and ultra-wide displays using browser dev tools.
+  </Step>
+  
+  <Step title="Keep dark mode in mind">
+    Use the custom neutral colors for proper contrast on dark backgrounds.
+  </Step>
+</Steps>

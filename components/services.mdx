@@ -1,0 +1,322 @@
+---
+title: Services Accordion
+description: Animated accordion component with autoplay rotation, flexible layout, and dynamic height calculation
+---
+
+## Overview
+
+The `ServicesAccordion` component displays services in an interactive accordion format:
+
+- Auto-rotates through services with configurable timing
+- Pauses on user interaction
+- Responsive: vertical accordion (mobile) vs horizontal tabs (desktop)
+- Dynamic height calculation for smooth transitions
+- Image fade effects and content animations
+
+## File Location
+
+```
+~/workspace/source/components/ServicesAccordion.tsx
+~/workspace/source/components/services/servicesData.ts
+```
+
+## Props
+
+<ParamField path="autoMs" type="number" default="50000">
+  Auto-rotation interval in milliseconds
+</ParamField>
+
+<ParamField path="pauseMs" type="number" default="45000">
+  Pause duration after user interaction
+</ParamField>
+
+## Service Data Structure
+
+```typescript
+export type ServiceItem = {
+  id: string;
+  title: string;
+  iconLabel: string; // Label shown when collapsed
+  description: string;
+  imageSrc: string;  // Image path from /public
+};
+
+export const SERVICES: ServiceItem[] = [
+  {
+    id: "design",
+    title: "DISEÑO",
+    iconLabel: "DISEÑO",
+    description: "Cuando necesitas que algo se vea bien, pero sobre todo se entienda mejor.",
+    imageSrc: "/services/design.webp",
+  },
+  {
+    id: "experiencia",
+    title: "EXPERIENCIA",
+    iconLabel: "EXPERIENCIA",
+    description: "Cuando las personas se pierden, dudan o no saben qué hacer en tu producto.",
+    imageSrc: "/services/experience.webp",
+  },
+  // ... more services
+];
+```
+
+## State Management
+
+```tsx
+const [active, setActive] = useState(0);
+const intervalRef = useRef<number | null>(null);
+const pauseTimeoutRef = useRef<number | null>(null);
+```
+
+### Autoplay Logic
+
+```tsx
+const startAutoplay = () => {
+  clearTimers();
+  intervalRef.current = window.setInterval(() => {
+    setActive((prev) => (prev + 1) % items.length);
+  }, autoMs);
+};
+
+// Start on mount
+useEffect(() => {
+  startAutoplay();
+  return () => clearTimers();
+}, [autoMs, items.length]);
+```
+
+### User Interaction Handling
+
+```tsx
+const onSelect = (idx: number) => {
+  setActive(idx);
+  clearTimers();
+  
+  // Pause, then resume autoplay
+  pauseTimeoutRef.current = window.setTimeout(() => {
+    startAutoplay();
+  }, pauseMs);
+};
+```
+
+## Mobile Layout (Vertical Accordion)
+
+```tsx
+<div className="flex flex-col gap-3 md:hidden">
+  {items.map((item, idx) => {
+    const isActive = idx === active;
+
+    return (
+      <button
+        onClick={() => onSelect(idx)}
+        className={[
+          "transition-[max-height,background-color,box-shadow,border-color]",
+          "duration-500 ease-out",
+          isActive
+            ? "max-h-[60rem] bg-neutral-black-800 border-neutral-white/10 shadow-[0_0_3.75rem_rgba(0,0,0,0.65)]"
+            : "max-h-[5.75rem] bg-neutral-black-800/60 hover:border-neutral-white/10",
+        ].join(" ")}
+      >
+        {/* Header always visible */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] tracking-[0.96px] text-neutral-white/60">
+              {item.iconLabel}
+            </p>
+            <h3 className="mt-2 text-heading-lg uppercase">
+              {item.title}
+            </h3>
+          </div>
+          <div className="shrink-0 w-10 h-10">✦</div>
+        </div>
+
+        {/* Content (shown when active) */}
+        <div
+          className={[
+            "transition-opacity duration-500",
+            isActive ? "opacity-100 delay-100" : "opacity-0",
+          ].join(" ")}
+        >
+          <Image src={item.imageSrc} alt={item.title} fill />
+          <p>{item.description}</p>
+        </div>
+      </button>
+    );
+  })}
+</div>
+```
+
+## Desktop Layout (Horizontal Tabs)
+
+### Flex-based Width Distribution
+
+```tsx
+const ACTIVE_FLEX = 7;
+const INACTIVE_FLEX = 2;
+
+const activeShare =
+  items.length <= 1
+    ? 1
+    : ACTIVE_FLEX / (ACTIVE_FLEX + (items.length - 1) * INACTIVE_FLEX);
+```
+
+Each tab dynamically adjusts its width:
+
+```tsx
+<button
+  style={{
+    flex: isActive ? `${ACTIVE_FLEX} 1 0%` : `${INACTIVE_FLEX} 1 0%`,
+  }}
+  className="transition-[flex,box-shadow,border-color,background-color] duration-700"
+>
+  {/* Content */}
+</button>
+```
+
+### Dynamic Height Calculation
+
+Uses ResizeObserver to measure content heights:
+
+```tsx
+const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
+const [desktopRailH, setDesktopRailH] = useState<number | null>(null);
+
+useEffect(() => {
+  const calc = () => {
+    const hs = measureRefs.current
+      .map((el) => (el ? el.getBoundingClientRect().height : 0))
+      .filter((n) => n > 0);
+    if (!hs.length) return;
+    setDesktopRailH(Math.ceil(Math.max(...hs)));
+  };
+
+  const ro = new ResizeObserver(() => {
+    requestAnimationFrame(calc);
+  });
+
+  measureRefs.current.forEach((el) => {
+    if (el) ro.observe(el);
+  });
+
+  return () => ro.disconnect();
+}, [items.length]);
+```
+
+### Inactive State Background Effect
+
+Inactive tabs show a greyscale, low-opacity background image:
+
+```tsx
+<div
+  className={[
+    "absolute inset-0 transition-opacity duration-500",
+    isActive ? "opacity-0" : "opacity-100",
+  ].join(" ")}
+>
+  <div className="absolute inset-0 flex items-center justify-center">
+    <Image
+      src={item.imageSrc}
+      alt=""
+      fill
+      className="object-contain grayscale opacity-35"
+    />
+  </div>
+  <div className="absolute inset-0 bg-neutral-black-900/75" />
+</div>
+```
+
+## Content Animations
+
+### Fade-in on Active
+
+```tsx
+<div
+  className={[
+    "transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+    isActive ? "opacity-100 delay-100" : "opacity-0 delay-0",
+  ].join(" ")}
+  style={{ willChange: "opacity" }}
+>
+  {/* Image and description */}
+</div>
+```
+
+## Section Header
+
+```tsx
+<div className="w-full mx-auto text-center">
+  <p className="text-[12px] tracking-widest text-accent-lime/80">
+    Cómo puedo ayudarte
+  </p>
+
+  <h2 className="mt-3 heading-h2 tracking-tight uppercase">
+    Servicios enfocados en claridad, experiencia y resultados reales.
+  </h2>
+</div>
+```
+
+## CTA Section
+
+Below the accordion:
+
+```tsx
+<div className="mt-12 lg:mt-28 flex flex-col items-center gap-4">
+  <p className="text-neutral-white/70 max-w-[56rem] text-center">
+    ¿No sabes exactamente qué necesitas? No pasa nada: lo aterrizamos juntos.
+  </p>
+
+  <div className="flex flex-wrap gap-4 justify-center">
+    <ContactLink
+      ctaId="services-primary-contact"
+      className="rounded-md bg-accent-lime px-6 py-3 text-black font-medium"
+    >
+      Ayúdame a definirlo
+    </ContactLink>
+
+    <ContactLink
+      ctaId="services-secondary-contact"
+      className="rounded-md border border-neutral-white/20 px-6 py-3 text-neutral-white/90"
+    >
+      No sé, pero quiero ayuda 😅
+    </ContactLink>
+  </div>
+</div>
+```
+
+## Usage Example
+
+```tsx
+import ServicesAccordion from "@/components/ServicesAccordion";
+
+export default function HomePage() {
+  return (
+    <main>
+      <ServicesAccordion 
+        autoMs={50000}  // Rotate every 50s
+        pauseMs={45000} // Pause 45s after click
+      />
+    </main>
+  );
+}
+```
+
+## Responsive Behavior
+
+| Breakpoint | Layout |
+|------------|--------|
+| `< md` (768px) | Vertical accordion, max-height transitions |
+| `≥ md` (768px) | Horizontal flex tabs, width transitions |
+
+## Performance Optimizations
+
+- `will-change: transform` on animated elements
+- `requestAnimationFrame` for height calculations
+- ResizeObserver for efficient layout updates
+- Cleanup of timers and observers in useEffect returns
+
+## Accessibility
+
+- Semantic `<button>` elements
+- `focus-visible:ring-2` for keyboard navigation
+- ARIA-hidden decorative icons
+- Keyboard accessible tab selection

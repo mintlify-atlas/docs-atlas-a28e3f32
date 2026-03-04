@@ -1,0 +1,257 @@
+---
+title: "UI Components API"
+description: "Reusable UI utility components used throughout the portfolio"
+---
+
+## Overview
+
+Guigolo includes several utility UI components in `~/components/ui/` that handle common patterns like contact tracking, scroll restoration, and visual effects.
+
+## ContactLink
+
+A wrapper component that tracks where contact CTAs are clicked from.
+
+### Props
+
+<ParamField path="ctaId" type="string" required>
+  Unique identifier for tracking this CTA's origin (e.g., "hero-contact", "projects-contact")
+</ParamField>
+
+<ParamField path="className" type="string">
+  CSS classes to apply to the link element
+</ParamField>
+
+<ParamField path="children" type="ReactNode" required>
+  Button text or content
+</ParamField>
+
+### Usage
+
+```typescript
+import ContactLink from '@/components/ui/ContactLink';
+
+<ContactLink
+  ctaId="hero-contact"
+  className="rounded-md bg-accent-lime px-6 py-3 text-black font-medium"
+>
+  Contactar
+</ContactLink>
+```
+
+### How It Works
+
+1. When clicked, stores the `ctaId` in sessionStorage:
+   ```typescript
+   sessionStorage.setItem('contact_origin', ctaId);
+   ```
+
+2. Navigates to the `#contacto` section using smooth scroll
+
+3. The Contact component reads this origin and includes it in form submissions
+
+4. Unlocks the `almost_talked` achievement when the form becomes visible
+
+<Info>
+  The origin tracking helps you understand which CTAs drive the most contact form submissions.
+</Info>
+
+### Real Implementation
+
+From `ContactLink.tsx:15-25`:
+
+```typescript
+const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  e.preventDefault();
+  
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('contact_origin', ctaId);
+    
+    const contactSection = document.getElementById('contacto');
+    contactSection?.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+```
+
+## RestoreScroll
+
+Automatically restores scroll position after navigation or page reload.
+
+### Usage
+
+```typescript
+import RestoreScroll from '@/components/ui/RestoreScroll';
+
+// In your root layout
+<RestoreScroll />
+```
+
+### How It Works
+
+1. On mount, checks sessionStorage for saved scroll position
+2. If found, scrolls to that position
+3. On unmount, saves current scroll position
+4. Handles hash-based navigation (e.g., `#contacto`)
+
+```typescript
+useEffect(() => {
+  const savedPosition = sessionStorage.getItem('scroll_position');
+  
+  if (savedPosition) {
+    window.scrollTo(0, parseInt(savedPosition, 10));
+    sessionStorage.removeItem('scroll_position');
+  }
+  
+  // Handle hash navigation
+  if (window.location.hash) {
+    const target = document.querySelector(window.location.hash);
+    target?.scrollIntoView({ behavior: 'smooth' });
+  }
+  
+  return () => {
+    sessionStorage.setItem('scroll_position', String(window.scrollY));
+  };
+}, []);
+```
+
+<Note>
+  This component improves UX by maintaining scroll context across client-side navigations.
+</Note>
+
+## BlueprintCard
+
+A styled card component with blueprint-inspired design elements.
+
+### Props
+
+<ParamField path="className" type="string">
+  Additional CSS classes
+</ParamField>
+
+<ParamField path="children" type="ReactNode" required>
+  Card content
+</ParamField>
+
+### Usage
+
+```typescript
+import BlueprintCard from '@/components/ui/BlueprintCard';
+
+<BlueprintCard className="p-6">
+  <h3>Card Title</h3>
+  <p>Card content goes here</p>
+</BlueprintCard>
+```
+
+### Styling
+
+The component includes:
+- Dashed border with low opacity (`border-dashed border-[#ededed1a]`)
+- Dark background with transparency (`bg-neutral-black-900/35`)
+- Consistent spacing and corner treatment
+
+```typescript
+<div className="border border-dashed border-[#ededed1a] bg-neutral-black-900/35 p-6">
+  {children}
+</div>
+```
+
+## contactOrigin.ts
+
+Utility functions for tracking contact form origins.
+
+### Functions
+
+#### getContactOrigin()
+
+Retrieves the stored contact origin from sessionStorage:
+
+```typescript
+import { getContactOrigin } from '@/components/ui/contactOrigin';
+
+const origin = getContactOrigin();
+console.log(origin); // "hero-contact" or null
+```
+
+#### setContactOrigin()
+
+Stores a contact origin:
+
+```typescript
+import { setContactOrigin } from '@/components/ui/contactOrigin';
+
+setContactOrigin('footer-cta');
+```
+
+#### clearContactOrigin()
+
+Clears the stored origin (typically after form submission):
+
+```typescript
+import { clearContactOrigin } from '@/components/ui/contactOrigin';
+
+clearContactOrigin();
+```
+
+### Implementation
+
+```typescript
+const ORIGIN_KEY = 'contact_origin';
+
+export function getContactOrigin(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem(ORIGIN_KEY);
+}
+
+export function setContactOrigin(origin: string): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(ORIGIN_KEY, origin);
+}
+
+export function clearContactOrigin(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(ORIGIN_KEY);
+}
+```
+
+## Best Practices
+
+<Tip>
+  Use ContactLink instead of regular anchor tags for all CTAs that lead to the contact form. This ensures consistent origin tracking.
+</Tip>
+
+<Warning>
+  SessionStorage is cleared when the tab closes. For persistent tracking across sessions, consider using localStorage or a database.
+</Warning>
+
+<Info>
+  All UI components handle SSR gracefully by checking `typeof window !== 'undefined'` before accessing browser APIs.
+</Info>
+
+## Component Patterns
+
+### Client-Side Only Logic
+
+```typescript
+'use client';
+
+import { useEffect } from 'react';
+
+export default function ClientComponent() {
+  useEffect(() => {
+    // Browser API access is safe here
+    const data = sessionStorage.getItem('key');
+  }, []);
+  
+  return <div>Content</div>;
+}
+```
+
+### SSR-Safe Conditionals
+
+```typescript
+const handleClick = () => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('key', 'value');
+  }
+};
+```

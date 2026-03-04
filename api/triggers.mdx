@@ -1,0 +1,310 @@
+---
+title: "Triggers API"
+description: "Event-based system for detecting user interactions and unlocking achievements"
+---
+
+## Overview
+
+The triggers system detects specific user interactions and automatically unlocks corresponding achievements. It uses custom React hooks and browser event listeners to track behavior patterns.
+
+## Core Components
+
+### TriggersBoot.tsx
+
+Initializes all trigger detection on application load:
+
+```typescript
+import TriggersBoot from '@/components/gamification/TriggersBoot';
+
+// In your root layout or page
+<TriggersBoot />
+```
+
+This component sets up:
+- Scroll detection
+- Click tracking
+- Keyboard event listeners
+- Visibility tracking
+- Time-on-site monitoring
+
+## Hooks
+
+### useAchievmentsTrigger
+
+Custom hook for achievement-specific trigger logic:
+
+```typescript
+function useAchievmentsTrigger() {
+  useEffect(() => {
+    // Scroll trigger
+    let scrolled = false;
+    const handleScroll = () => {
+      if (!scrolled && window.scrollY > 300) {
+        scrolled = true;
+        unlockAchievement('explorer');
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+}
+```
+
+### useMissionsTrigger
+
+Tracks complex interaction patterns for missions:
+
+```typescript
+function useMissionsTrigger() {
+  useEffect(() => {
+    let readingTime = 0;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        readingTime += 1;
+        if (readingTime >= 15) {
+          unlockAchievement('curious');
+          clearInterval(interval);
+        }
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+}
+```
+
+## Trigger Types
+
+### Scroll Triggers
+
+Detect scroll-based exploration:
+
+```typescript
+const handleScroll = () => {
+  const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+  
+  if (scrollPercent > 50 && !hasAchievement('explorer')) {
+    unlockAchievement('explorer');
+  }
+};
+
+window.addEventListener('scroll', handleScroll, { passive: true });
+```
+
+<Info>
+  Scroll triggers use `passive: true` for better performance and include anti-programmatic-scroll detection.
+</Info>
+
+### Click Triggers
+
+Track specific element interactions:
+
+```typescript
+// In a component
+const handleServiceClick = () => {
+  const clicks = Number(sessionStorage.getItem('service_clicks') || '0');
+  sessionStorage.setItem('service_clicks', String(clicks + 1));
+  
+  if (clicks + 1 >= 2) {
+    unlockAchievement('services_decoded');
+  }
+};
+
+<button onClick={handleServiceClick}>Learn More</button>
+```
+
+### Time-Based Triggers
+
+Unlock achievements based on dwell time:
+
+```typescript
+let timeOnPage = 0;
+const interval = setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    timeOnPage += 1;
+    
+    if (timeOnPage >= 20) {
+      unlockAchievement('observer');
+      clearInterval(interval);
+    }
+  }
+}, 1000);
+```
+
+<Note>
+  Time triggers only count visible time when the tab is active, preventing inflation from background tabs.
+</Note>
+
+### Visibility Triggers
+
+Detect when specific elements enter the viewport:
+
+```typescript
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      unlockAchievement('reached_footer');
+      observer.disconnect();
+    }
+  });
+}, { threshold: 0.5 });
+
+const footer = document.querySelector('footer');
+if (footer) observer.observe(footer);
+```
+
+### Keyboard Triggers
+
+Easter egg detection via key sequences:
+
+```typescript
+let sequence = '';
+const TARGET = 'GUIGOLO';
+
+document.addEventListener('keydown', (e) => {
+  sequence += e.key.toUpperCase();
+  sequence = sequence.slice(-TARGET.length);
+  
+  if (sequence === TARGET) {
+    unlockAchievement('curious_player');
+  }
+});
+```
+
+## Form Triggers
+
+Track contact form interaction:
+
+```typescript
+// From Contact.tsx
+const handleFormInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const message = e.target.value;
+  
+  if (message.length >= 20 && !hasAchievement('took_courage')) {
+    unlockAchievement('took_courage');
+  }
+};
+
+const handleFormSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // Submit form...
+  
+  unlockAchievement('first_contact');
+};
+```
+
+## Anti-Spam Protection
+
+Triggers include cooldown mechanisms:
+
+```typescript
+const COOLDOWN_MS = 2500;
+const cooldownKey = 'trigger_cooldown';
+
+function triggerWithCooldown(achievementId: AchievementId) {
+  const lastTrigger = Number(sessionStorage.getItem(cooldownKey) || '0');
+  const now = Date.now();
+  
+  if (now - lastTrigger < COOLDOWN_MS) {
+    return; // Too soon
+  }
+  
+  sessionStorage.setItem(cooldownKey, String(now));
+  unlockAchievement(achievementId);
+}
+```
+
+<Warning>
+  Always include anti-spam measures to prevent rapid-fire unlocking, especially on mobile where scroll events fire frequently.
+</Warning>
+
+## Programmatic Detection Prevention
+
+Distinguish human from automated scrolling:
+
+```typescript
+let lastScrollTime = 0;
+let scrollCount = 0;
+
+const handleScroll = () => {
+  const now = Date.now();
+  const timeDiff = now - lastScrollTime;
+  
+  // Detect smooth/instant scroll (likely programmatic)
+  if (timeDiff < 16) {
+    scrollCount++;
+    if (scrollCount > 10) {
+      return; // Likely automated
+    }
+  } else {
+    scrollCount = 0;
+  }
+  
+  lastScrollTime = now;
+  
+  // Process as human scroll
+  if (window.scrollY > 300) {
+    unlockAchievement('explorer');
+  }
+};
+```
+
+## Session Storage Usage
+
+Triggers use sessionStorage for temporary state:
+
+```typescript
+// Track within-session interactions
+sessionStorage.setItem('service_clicks', '2');
+sessionStorage.setItem('project_views', '3');
+sessionStorage.setItem('time_on_page', '45');
+```
+
+<Info>
+  SessionStorage clears on tab close, making it perfect for tracking temporary interaction counts without polluting localStorage.
+</Info>
+
+## Custom Events
+
+Triggers can emit custom events for UI updates:
+
+```typescript
+import { emitAchievementUnlocked } from '@/components/gamification/achievementEvents';
+
+// Called automatically by unlockAchievement()
+emitAchievementUnlocked({ id: 'explorer', at: Date.now() });
+
+// Listen in UI components
+import { onAchievementUnlocked } from '@/components/gamification/achievementEvents';
+
+onAchievementUnlocked((achievement) => {
+  // Show toast notification
+  toast.success(achievement.id);
+});
+```
+
+## Best Practices
+
+<Tip>
+  Use `passive: true` on scroll and touch event listeners to improve performance:
+  ```typescript
+  window.addEventListener('scroll', handler, { passive: true });
+  ```
+</Tip>
+
+<Tip>
+  Clean up event listeners and intervals in useEffect cleanup functions to prevent memory leaks:
+  ```typescript
+  useEffect(() => {
+    const handler = () => {};
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+  ```
+</Tip>
+
+<Note>
+  Triggers should feel natural and reward genuine engagement, not arbitrary actions. Test on real users to ensure thresholds make sense.
+</Note>

@@ -1,0 +1,268 @@
+---
+title: "Achievements API"
+description: "Complete API reference for the Guigolo achievements system"
+---
+
+## Overview
+
+The achievements system tracks user interactions and milestones throughout the portfolio experience. It uses localStorage for persistence and emits custom events for UI notifications.
+
+## Core Types
+
+### AchievementId
+
+Union type of all available achievement identifiers:
+
+```typescript
+type AchievementId =
+  | "first_step"          // Initial visit
+  | "explorer"            // Scroll exploration
+  | "curious"             // Reading content
+  | "observer"            // Dwell time
+  | "map_complete"        // Navigation exploration
+  | "services_decoded"    // Services interaction
+  | "projects_gallery"    // Project browsing
+  | "read_between_lines"  // Deep content engagement
+  | "critical_thinker"    // Analysis patterns
+  | "good_eye"            // Visual attention
+  | "curious_player"      // Easter egg discovery
+  | "visual_match"        // Return visit
+  | "almost_talked"       // Contact form view
+  | "took_courage"        // Form interaction
+  | "first_contact";      // Form submission
+```
+
+### AchievementMeta
+
+Metadata structure for achievement definitions:
+
+<ParamField path="id" type="AchievementId" required>
+  Unique identifier for the achievement
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Display name for the achievement
+</ParamField>
+
+<ParamField path="description" type="string" required>
+  User-facing description shown when unlocked
+</ParamField>
+
+<ParamField path="icon" type="string">
+  Path to achievement icon image
+</ParamField>
+
+<ParamField path="howItWorks" type="object" required>
+  Technical documentation for the achievement:
+  - `trigger`: What causes the achievement to unlock
+  - `behavior`: User behavior being tracked
+  - `whyItMatters`: Business/UX reasoning
+</ParamField>
+
+### AchievementsStateV1
+
+The complete state object stored in localStorage:
+
+```typescript
+type AchievementsStateV1 = {
+  version: 1;
+  unlocked: Partial<Record<AchievementId, UnlockedEntry>>;
+  stats: {
+    visits: number;
+    firstVisitAt: number;
+    lastVisitAt: number;
+    lastSeenDate: string; // YYYY-MM-DD
+  };
+};
+```
+
+### UnlockedEntry
+
+```typescript
+type UnlockedEntry = {
+  at: number;      // Timestamp when first unlocked
+  count: number;   // For accumulative achievements
+};
+```
+
+## Functions
+
+### unlockAchievement()
+
+Unlocks an achievement and updates localStorage.
+
+<ParamField path="id" type="AchievementId" required>
+  The achievement to unlock
+</ParamField>
+
+<ParamField path="opts" type="object">
+  Options object:
+  - `accumulative`: If true, increments count on existing achievements
+</ParamField>
+
+<ResponseField name="unlockedNow" type="boolean">
+  True if this was the first time unlocking (false if already unlocked)
+</ResponseField>
+
+<ResponseField name="state" type="AchievementsStateV1">
+  Updated achievements state
+</ResponseField>
+
+<ResponseField name="entry" type="UnlockedEntry">
+  The achievement entry with timestamp and count
+</ResponseField>
+
+```typescript
+import { unlockAchievement } from '@/components/gamification/achievementsStore';
+
+const result = unlockAchievement('first_step');
+if (result.unlockedNow) {
+  console.log('Achievement unlocked!');
+}
+```
+
+<Note>
+  The function includes a 2.5-second cooldown to prevent spam unlocking. The cooldown doesn't apply to `first_contact`.
+</Note>
+
+### hasAchievement()
+
+Checks if an achievement has been unlocked.
+
+<ParamField path="id" type="AchievementId" required>
+  Achievement to check
+</ParamField>
+
+```typescript
+import { hasAchievement } from '@/components/gamification/achievementsStore';
+
+if (hasAchievement('explorer')) {
+  // User has explored the site
+}
+```
+
+### trackVisit()
+
+Tracks a page visit and updates visit statistics.
+
+<ResponseField name="isNewDay" type="boolean">
+  True if this is the first visit today (different from last visit date)
+</ResponseField>
+
+<ResponseField name="state" type="AchievementsStateV1">
+  Updated state with new visit stats
+</ResponseField>
+
+```typescript
+import { trackVisit } from '@/components/gamification/achievementsStore';
+
+const { isNewDay } = trackVisit();
+if (isNewDay) {
+  unlockAchievement('visual_match');
+}
+```
+
+### getAchievementsState()
+
+Retrieves the current achievements state from localStorage.
+
+```typescript
+import { getAchievementsState } from '@/components/gamification/achievementsStore';
+
+const state = getAchievementsState();
+console.log(`Total visits: ${state.stats.visits}`);
+```
+
+### getUnlockedCount()
+
+Returns the total number of unlocked achievements.
+
+```typescript
+import { getUnlockedCount } from '@/components/gamification/achievementsStore';
+
+const count = getUnlockedCount();
+console.log(`Unlocked ${count} achievements`);
+```
+
+### resetAchievements()
+
+Clears all achievement data from localStorage. Useful for testing.
+
+```typescript
+import { resetAchievements } from '@/components/gamification/achievementsStore';
+
+resetAchievements();
+```
+
+<Warning>
+  This action is irreversible and will delete all user progress.
+</Warning>
+
+## Achievement Catalog
+
+The `ACHIEVEMENTS` array in `achievementsCatalog.ts` contains all 15 achievement definitions:
+
+```typescript
+import { ACHIEVEMENTS, ACH_BY_ID } from '@/components/gamification/achievementsCatalog';
+
+// Get all achievements
+console.log(ACHIEVEMENTS.length); // 15
+
+// Get specific achievement by ID
+const achievement = ACH_BY_ID['first_step'];
+console.log(achievement.title); // "Primer paso"
+```
+
+## LocalStorage Schema
+
+Achievements are stored at the key `guigolo_achievements_v1`:
+
+```json
+{
+  "version": 1,
+  "unlocked": {
+    "first_step": {
+      "at": 1709584320000,
+      "count": 1
+    },
+    "explorer": {
+      "at": 1709584335000,
+      "count": 1
+    }
+  },
+  "stats": {
+    "visits": 3,
+    "firstVisitAt": 1709584320000,
+    "lastVisitAt": 1709670720000,
+    "lastSeenDate": "2024-03-05"
+  }
+}
+```
+
+## Events
+
+When an achievement is unlocked, a custom event is emitted:
+
+```typescript
+// Listen for achievement unlocks
+import { onAchievementUnlocked } from '@/components/gamification/achievementEvents';
+
+onAchievementUnlocked((achievement) => {
+  console.log(`Unlocked: ${achievement.id}`);
+  // Show toast notification
+});
+```
+
+## Best Practices
+
+<Tip>
+  Use `hasAchievement()` to check status before attempting complex unlock logic. It's faster than calling `getAchievementsState()` directly.
+</Tip>
+
+<Info>
+  The cooldown system prevents rapid-fire unlocking on mobile devices where scroll events can fire frequently. Adjust the `COOLDOWN_MS` constant if needed.
+</Info>
+
+<Note>
+  Achievement state persists across sessions using localStorage. Users who clear their browser data will lose progress.
+</Note>

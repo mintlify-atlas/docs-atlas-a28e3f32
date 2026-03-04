@@ -1,0 +1,319 @@
+---
+title: Projects Components
+description: Embla carousel-powered projects section with autoplay, custom timing, and slide-based project cards
+---
+
+## Overview
+
+The projects section uses:
+
+- **ProjectsSection** - Carousel container with autoplay and controls
+- **ProjectSlide** - Individual project display component
+- **Project Data** - Typed data structure from `project.data.ts`
+
+## File Locations
+
+```
+~/workspace/source/components/ProjectsSection.tsx
+~/workspace/source/components/ProjectCard.tsx
+~/workspace/source/components/projects/project.data.ts
+```
+
+## ProjectsSection Component
+
+### Props
+
+<ParamField path="items" type="ProjectItem[]" required>
+  Array of project data objects
+</ParamField>
+
+### Embla Carousel Setup
+
+```tsx
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
+
+const AUTOPLAY_MS = 7500; // Auto-advance every 7.5s
+const PAUSE_AFTER_ACTION_MS = 12000; // Pause 12s after user interaction
+
+const autoplay = useMemo(
+  () =>
+    Autoplay({
+      delay: AUTOPLAY_MS,
+      stopOnInteraction: false, // Continue after interaction pause
+      stopOnMouseEnter: true,   // Pause on hover
+    }),
+  []
+);
+
+const [emblaRef, emblaApi] = useEmblaCarousel(
+  { loop: true, align: "start", skipSnaps: false },
+  [autoplay]
+);
+```
+
+### User Interaction Handling
+
+Pause autoplay temporarily when user interacts:
+
+```tsx
+const pauseAfterUserAction = useCallback(() => {
+  safeStop();
+
+  if (pauseTimerRef.current) window.clearTimeout(pauseTimerRef.current);
+  pauseTimerRef.current = window.setTimeout(() => {
+    safePlay();
+  }, PAUSE_AFTER_ACTION_MS);
+}, [safePlay, safeStop]);
+
+// Pause on swipe/drag
+emblaApi.on("pointerUp", pauseAfterUserAction);
+
+// Pause on button click
+const goPrev = useCallback(() => {
+  if (!emblaApi) return;
+  emblaApi.scrollPrev();
+  pauseAfterUserAction();
+}, [emblaApi, pauseAfterUserAction]);
+```
+
+### Carousel Structure
+
+```tsx
+<div ref={emblaRef} className="overflow-hidden">
+  <div className="flex">
+    {items.map((p) => (
+      <div
+        key={p.id}
+        className="min-w-0 flex-[0_0_100%]"
+      >
+        <ProjectSlide item={p} />
+      </div>
+    ))}
+  </div>
+</div>
+```
+
+### Navigation Controls
+
+```tsx
+<div className="flex items-center justify-between">
+  <div>
+    {String(selected + 1).padStart(1, "0")}/{items.length}
+  </div>
+
+  <div className="flex items-center gap-6">
+    <button onClick={goPrev}>PREVIOUS</button>
+    <button onClick={goNext}>NEXT</button>
+  </div>
+</div>
+```
+
+## ProjectSlide Component
+
+### Layout
+
+Two-column grid on desktop (2xl:), stacked on mobile:
+
+```tsx
+<div className="
+  grid grid-cols-1
+  2xl:grid-cols-[1fr_minmax(420px,620px)]
+  gap-0
+">
+  {/* Info panel (order-2 on desktop) */}
+  <div className="order-1 2xl:order-2">
+    {/* Content */}
+  </div>
+
+  {/* Image (order-1 on desktop) */}
+  <div className="order-2 2xl:order-1">
+    {/* Image */}
+  </div>
+</div>
+```
+
+### Info Panel
+
+```tsx
+<div className="px-6 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12">
+  {/* Company logo */}
+  <Image
+    src={item.companyLogo}
+    alt=""
+    width={300}
+    height={26}
+    className="h-[28px] w-auto sm:h-[32px]"
+  />
+
+  {/* Title */}
+  <h3 className="mt-4 heading-h3 tracking-tight">
+    {item.title}
+  </h3>
+
+  {/* Sector */}
+  <div className="mt-2 text-neutral-white/70 text-[14px]">
+    {item.sector}
+  </div>
+
+  {/* Description paragraphs */}
+  <div className="mt-6 space-y-4 text-neutral-white/70 text-[14px]">
+    {item.description.map((t, idx) => (
+      <p key={idx}>{t}</p>
+    ))}
+  </div>
+
+  {/* Specs grid */}
+  <div className="mt-8 grid grid-cols-[100px_1fr] gap-x-5 gap-y-3 text-[12px]">
+    <SpecLabel>STACK</SpecLabel>
+    <SpecValue>{item.stack}</SpecValue>
+
+    <SpecLabel>ROLE</SpecLabel>
+    <SpecValue>{item.role}</SpecValue>
+
+    <SpecLabel>LINK</SpecLabel>
+    <SpecValue>
+      <Link href={item.linkUrl}>
+        {item.linkLabel}
+      </Link>
+    </SpecValue>
+
+    <SpecLabel>ACCESS</SpecLabel>
+    <SpecValue>{item.access || "—"}</SpecValue>
+  </div>
+</div>
+```
+
+### Image Display
+
+```tsx
+<div className="relative w-full aspect-video overflow-hidden bg-neutral-black-900/40">
+  <Image
+    src={item.image}
+    alt=""
+    fill
+    className="object-cover select-none"
+    sizes="(min-width: 1024px) calc(100vw - 520px), 100vw"
+  />
+</div>
+```
+
+## Project Data Structure
+
+### TypeScript Interface
+
+```typescript
+export type ProjectItem = {
+  id: string;
+  companyLogo: string; // Logo image path
+  title: string;       // Project title
+  sector: string;      // Industry and project type
+  description: string[]; // Array of paragraphs
+  image: string;       // Main project image
+  stack: string;       // Technologies used
+  role: string;        // Your role
+  linkLabel: string;   // Link text
+  linkUrl: string;     // Link URL (internal or external)
+  access?: string;     // Optional access URL display
+};
+```
+
+### Example Project Data
+
+```typescript
+export const projects: ProjectItem[] = [
+  {
+    id: "academia-platform-project",
+    companyLogo: "/brand/projects/academia-global/logo-ag.png",
+    title: "ACADEMIA GLOBAL",
+    sector: "EdTech · Rediseño de plataforma educativa",
+    description: [
+      "Rediseño un campus para que aprender se sienta claro, medible y motivador.",
+      "Sistema visual e interacción enfocados en progreso, jerarquía de información y decisiones rápidas.",
+    ],
+    image: "/brand/projects/academia-global/cover_plataforma_educativa.png",
+    stack: "Figma, HTML5, CSS, JavaScript",
+    role: "UI Designer & Web development",
+    linkLabel: "Ver caso",
+    linkUrl: "/projects/ag/platform",
+    access: "guigolo.com/projects/ag/platform",
+  },
+  // ... more projects
+];
+```
+
+## CTA Section
+
+After the carousel, there's a conversion-focused CTA:
+
+```tsx
+<div className="mx-auto max-w-[56rem] border border-neutral-white/10 bg-neutral-black-800/40 p-6 md:p-8 text-center">
+  <p className="text-neutral-white/70">
+    Ok, tu turno. ¿Qué quieres construir?
+  </p>
+
+  <div className="mt-5 flex flex-wrap gap-4 justify-center">
+    <ContactLink
+      ctaId="projects-contact"
+      className="rounded-md bg-accent-lime px-6 py-3 text-black font-medium"
+    >
+      Hablemos de tu proyecto
+    </ContactLink>
+  </div>
+</div>
+```
+
+## Decorative Bands
+
+Repeating text pattern above and below section:
+
+```tsx
+<div className="pointer-events-none select-none overflow-hidden py-3">
+  <div className="whitespace-nowrap text-[12px] tracking-[0.45em] text-neutral-white/10">
+    {"PROJECTS · ".repeat(40)}
+  </div>
+</div>
+```
+
+## Usage Example
+
+```tsx
+import ProjectsSection from "@/components/ProjectsSection";
+import { projects } from "@/components/projects/project.data";
+
+export default function HomePage() {
+  return (
+    <main>
+      <ProjectsSection items={projects} />
+    </main>
+  );
+}
+```
+
+## Autoplay Behavior
+
+| Event | Behavior |
+|-------|----------|
+| Page load | Auto-advance every 7.5s |
+| Mouse enter | Pause |
+| Mouse leave | Resume |
+| Click prev/next | Pause 12s, then resume |
+| Swipe/drag | Pause 12s, then resume |
+
+## Responsive Breakpoints
+
+- **Mobile**: Stacked layout, image below info
+- **2xl (1536px+)**: Side-by-side, image left (60%), info right (40%)
+
+## ProjectCard Component
+
+**Note**: `ProjectCard.tsx` exists but appears to be an alternative card-based layout not currently used in the main projects section. It displays projects in a grid card format with module-style metadata boxes.
+
+### Key Differences
+
+- Uses bordered cards instead of full-width slides
+- Grid layout for specs instead of two-column
+- Color-coded status badges
+- No carousel integration
+
+See `~/workspace/source/components/ProjectCard.tsx:1` for implementation details.

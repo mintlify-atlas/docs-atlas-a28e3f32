@@ -1,0 +1,188 @@
+---
+title: Customizing Your Portfolio
+description: Learn how to customize Guigolo to match your brand, content, and personal style
+---
+
+## Overview
+
+Guigolo is designed to be easily customizable. This guide shows you exactly where to make changes to personalize your portfolio.
+
+## Brand Colors
+
+Colors are defined in `tailwind.config.js:18-31`. Update the custom color palette to match your brand:
+
+```js tailwind.config.js
+colors: {
+  "neutral-black-900": "#101010",
+  "neutral-black-800": "#161616",
+  "neutral-white": "#ededed",
+  "neutral-gray-600": "#3c3c3c",
+  "neutral-gray-500": "#4c4c4c",
+  "accent-lilac": "#6900ea",      // Primary accent
+  "accent-cyan-10": "rgba(20,177,255,0.10)",
+  "accent-lime": "#C6FF00",       // Secondary accent
+}
+```
+
+<Tip>
+The `accent-lilac` and `accent-lime` colors are used throughout the portfolio for interactive elements and highlights. Change these to match your brand identity.
+</Tip>
+
+## Typography & Fonts
+
+Guigolo uses Google Fonts configured in `app/layout.tsx:2-18`:
+
+```tsx app/layout.tsx
+import { Unbounded, Anta } from "next/font/google";
+
+const unbounded = Unbounded({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-unbounded",
+});
+
+const anta = Anta({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-anta",
+});
+```
+
+To change fonts:
+
+<Steps>
+  <Step title="Choose your fonts">
+    Browse [Google Fonts](https://fonts.google.com) and select your preferred typefaces.
+  </Step>
+  
+  <Step title="Update imports">
+    Replace the font imports in `app/layout.tsx` with your chosen fonts.
+  </Step>
+  
+  <Step title="Update Tailwind config">
+    Modify the `fontFamily` section in `tailwind.config.js:33-37` to reference your new CSS variables.
+  </Step>
+</Steps>
+
+```js tailwind.config.js
+fontFamily: {
+  display: ["var(--font-unbounded)"],  // Headings
+  body: ["var(--font-unbounded)"],     // Body text
+  accent: ["var(--font-anta)"],        // Accent text
+}
+```
+
+## Personal Information
+
+Update your metadata and SEO information in `app/layout.tsx:20-74`:
+
+```tsx app/layout.tsx
+export const metadata: Metadata = {
+  metadataBase: new URL("https://yoursite.com"),
+  title: {
+    default: "Your Name · Your Tagline",
+    template: "%s | Your Name",
+  },
+  description: "Your professional description goes here.",
+  // ... update all metadata fields
+}
+```
+
+<Note>
+Make sure to update `metadataBase`, `title`, `description`, `openGraph`, and `twitter` fields with your information.
+</Note>
+
+## Project Data
+
+Your projects are defined in `components/projects/project.data.ts`. Each project follows this structure:
+
+```ts components/projects/project.data.ts
+export type ProjectItem = {
+  id: string;              // Unique identifier
+  companyLogo: string;     // Path to logo in /public
+  title: string;           // Project title
+  sector: string;          // Industry · Project type
+  description: string[];   // 1-2 paragraph array
+  image: string;           // Hero image path
+  stack: string;           // Technologies used
+  role: string;            // Your role
+  linkLabel: string;       // CTA button text
+  linkUrl: string;         // Project URL
+  access?: string;         // Optional readable URL
+};
+```
+
+### Adding a New Project
+
+<Steps>
+  <Step title="Add project assets">
+    Place your logo and cover image in `/public/brand/projects/your-project/`
+  </Step>
+  
+  <Step title="Add project to array">
+    Add a new object to the `projects` array in `project.data.ts`:
+    
+    ```ts
+    {
+      id: "your-project-id",
+      companyLogo: "/brand/projects/your-project/logo.png",
+      title: "PROJECT NAME",
+      sector: "Industry · Project Type",
+      description: [
+        "First paragraph explaining the problem and solution.",
+        "Second paragraph focusing on your approach and impact.",
+      ],
+      image: "/brand/projects/your-project/cover.png",
+      stack: "Figma, React, Next.js, Tailwind CSS",
+      role: "UX/UI Designer & Developer",
+      linkLabel: "View case study",
+      linkUrl: "/projects/your-project",
+    }
+    ```
+  </Step>
+</Steps>
+
+## About Section Cards
+
+The about section slider cards are defined in `components/about/AboutDocsSliderCard.data.ts`:
+
+```ts
+export const slides = [
+  {
+    title: "YOUR CARD TITLE",
+    desc: "Card description explaining what you offer.",
+    tags: ["Tag1", "Tag2", "Tag3"],
+    image: "/brand/about/slides/slide-1.png",
+  },
+  // Add more slides...
+];
+```
+
+Customize the title, description, tags, and image path for each card to showcase your skills and approach.
+
+## Images & Photos
+
+Replace default images with your own:
+
+- **Profile photos**: Place in `/public/brand/` or relevant subdirectory
+- **Project covers**: Store in `/public/brand/projects/[project-name]/`
+- **About slides**: Store in `/public/brand/about/slides/`
+
+<Tip>
+Use optimized images (WebP format recommended) to maintain fast load times. Next.js will automatically optimize images used with the `<Image>` component.
+</Tip>
+
+## Custom CSS Variables
+
+For the about section's blueprint design, update CSS variables in `app/globals.css:14-20`:
+
+```css app/globals.css
+:root {
+  --about-chip: rgba(105, 0, 234, 0.06);      /* Background tint 1 */
+  --about-chip-2: rgba(20, 177, 255, 0.06);   /* Background tint 2 */
+  --about-ghost: rgba(20, 177, 255, 0.10);    /* Ghost text */
+  --about-glow: rgba(20, 177, 255, 0.18);     /* Glow effect */
+}
+```
+
+These variables control the subtle background effects in the about section grid.

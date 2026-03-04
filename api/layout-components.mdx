@@ -1,0 +1,309 @@
+---
+title: "Layout Components API"
+description: "Structural components for page layout and organization"
+---
+
+## Overview
+
+Layout components provide the structural foundation for the portfolio, handling page sections, footers, and content organization.
+
+## Section
+
+A simple wrapper component for page sections with consistent styling.
+
+### Props
+
+<ParamField path="id" type="string">
+  HTML id attribute for anchor linking (e.g., "projects", "about")
+</ParamField>
+
+<ParamField path="className" type="string">
+  Additional CSS classes
+</ParamField>
+
+<ParamField path="children" type="ReactNode" required>
+  Section content
+</ParamField>
+
+### Usage
+
+```typescript
+import Section from '@/components/Section';
+
+<Section id="projects" className="py-12">
+  <h2>My Projects</h2>
+  {/* Section content */}
+</Section>
+```
+
+### Implementation
+
+From `Section.tsx:5-12`:
+
+```typescript
+export default function Section({ 
+  id, 
+  className = '', 
+  children 
+}: SectionProps) {
+  return (
+    <section id={id} className={`relative ${className}`}>
+      {children}
+    </section>
+  );
+}
+```
+
+<Info>
+  The `relative` positioning enables absolute positioning of child elements like decorative backgrounds.
+</Info>
+
+## Footer
+
+The site footer with social links and attribution.
+
+### Features
+
+- Social media icon links
+- Copyright notice
+- Design credit
+- Blueprint-inspired decorative elements
+- Responsive layout
+
+### Usage
+
+```typescript
+import Footer from '@/components/Footer';
+
+<Footer />
+```
+
+### Structure
+
+From `Footer.tsx:15-75`:
+
+```typescript
+export default function Footer() {
+  return (
+    <footer className="relative bg-neutral-black-900 border-t border-neutral-white/10 py-12">
+      {/* Decorative band */}
+      <div className="overflow-hidden py-3">
+        <div className="text-[12px] tracking-[0.45em] text-neutral-white/10">
+          {"FOOTER · ".repeat(40)}
+        </div>
+      </div>
+      
+      <div className="mx-auto max-w-[1280px] px-6 md:px-12">
+        {/* Social links */}
+        <div className="flex justify-center gap-6">
+          <a href="https://github.com/memorstx" target="_blank" rel="noopener">
+            GitHub
+          </a>
+          <a href="https://linkedin.com/in/guigolo" target="_blank" rel="noopener">
+            LinkedIn
+          </a>
+        </div>
+        
+        {/* Copyright */}
+        <div className="mt-8 text-center text-neutral-white/50 text-sm">
+          © {new Date().getFullYear()} Guillermo González López
+        </div>
+      </div>
+    </footer>
+  );
+}
+```
+
+### Styling Details
+
+- **Border**: Subtle top border (`border-t border-neutral-white/10`)
+- **Background**: Matches site theme (`bg-neutral-black-900`)
+- **Typography**: Small, spaced text for subtle appearance
+- **Links**: Hover states with color transitions
+
+## Layout Patterns
+
+### Max-Width Container
+
+Common pattern for centering content:
+
+```typescript
+<div className="mx-auto max-w-[1280px] px-6 md:px-12 lg:px-24">
+  {/* Content constrained to max width */}
+</div>
+```
+
+### Responsive Padding
+
+Progressive padding increase:
+
+```typescript
+<div className="px-4 sm:px-6 md:px-12 lg:px-24">
+  {/* Padding grows with viewport */}
+</div>
+```
+
+### Section Spacing
+
+Consistent vertical rhythm:
+
+```typescript
+<section className="py-12 md:py-16 lg:py-20">
+  {/* Section with responsive vertical padding */}
+</section>
+```
+
+## Decorative Elements
+
+### Repeating Text Band
+
+A common decorative pattern in Guigolo:
+
+```typescript
+<div className="pointer-events-none select-none overflow-hidden py-3">
+  <div className="whitespace-nowrap text-[12px] tracking-[0.45em] text-neutral-white/10">
+    {"PROJECTS · ".repeat(40)}
+  </div>
+</div>
+```
+
+<Note>
+  `pointer-events-none` ensures the decorative element doesn't interfere with user interactions.
+</Note>
+
+### Blueprint Grid Background
+
+```typescript
+<div className="relative">
+  {/* Background grid */}
+  <div className="absolute inset-0 opacity-5">
+    <div className="h-full w-full" style={{
+      backgroundImage: `
+        linear-gradient(to right, #fff 1px, transparent 1px),
+        linear-gradient(to bottom, #fff 1px, transparent 1px)
+      `,
+      backgroundSize: '24px 24px'
+    }}></div>
+  </div>
+  
+  {/* Content */}
+  <div className="relative">
+    {/* Your content here */}
+  </div>
+</div>
+```
+
+## Responsive Breakpoints
+
+Tailwind breakpoints used in layout components:
+
+| Breakpoint | Min Width | Typical Usage |
+|------------|-----------|---------------|
+| `sm` | 640px | Tablets portrait |
+| `md` | 768px | Tablets landscape |
+| `lg` | 1024px | Laptops |
+| `xl` | 1280px | Desktops |
+| `2xl` | 1536px | Large desktops |
+| `3xl` | 1920px | Full HD displays |
+| `4xl` | 2560px | 2K/4K displays |
+
+### Usage Example
+
+```typescript
+<div className="
+  grid 
+  grid-cols-1 
+  sm:grid-cols-2 
+  lg:grid-cols-3 
+  2xl:grid-cols-4
+  gap-4 
+  lg:gap-6 
+  2xl:gap-8
+">
+  {/* Responsive grid that adapts to screen size */}
+</div>
+```
+
+## Z-Index Hierarchy
+
+Layout components follow a consistent z-index stack:
+
+```typescript
+// Z-index layers (from tailwind.config.js)
+const zIndex = {
+  'nav': 100,           // Navbar always on top
+  'modal': 90,          // Modals below nav
+  'overlay': 80,        // Overlays
+  'dropdown': 70,       // Dropdowns
+  'sticky': 60,         // Sticky elements
+  'default': 1,         // Default layer
+};
+```
+
+### Example Usage
+
+```typescript
+// Navbar
+<nav className="sticky top-0 z-[100]">
+  {/* Navigation content */}
+</nav>
+
+// Achievement toast
+<div className="fixed bottom-4 right-4 z-[90]">
+  {/* Toast notification */}
+</div>
+```
+
+## Best Practices
+
+<Tip>
+  Use the Section component for all major page divisions. It provides consistent spacing and enables anchor navigation.
+</Tip>
+
+<Tip>
+  Always use the max-width container pattern to prevent content from stretching too wide on large displays:
+  ```typescript
+  <div className="mx-auto max-w-[1280px] px-6">
+    {/* Content */}
+  </div>
+  ```
+</Tip>
+
+<Warning>
+  When using absolute positioning for decorative elements, ensure the parent has `relative` positioning to establish the positioning context.
+</Warning>
+
+<Info>
+  The Footer component automatically updates the copyright year using `new Date().getFullYear()`, so no manual updates are needed.
+</Info>
+
+## Accessibility
+
+### Landmark Roles
+
+Layout components use semantic HTML for accessibility:
+
+```typescript
+<header>  {/* Implicit landmark role */}
+<nav>     {/* Navigation landmark */}
+<main>    {/* Main content landmark */}
+<footer>  {/* Footer landmark */}
+<section> {/* Content section */}
+```
+
+### Skip Links
+
+Consider adding skip links for keyboard navigation:
+
+```typescript
+<a 
+  href="#main-content" 
+  className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200]"
+>
+  Skip to main content
+</a>
+```
+
+<Note>
+  The `sr-only` utility hides content visually but keeps it accessible to screen readers. The `focus:not-sr-only` classes make it visible when focused.
+</Note>
