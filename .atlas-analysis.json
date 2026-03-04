@@ -1,0 +1,98 @@
+{
+  "projectType": "frontend",
+  "projectName": "Guigolo",
+  "projectDescription": "Personal portfolio for UX/UI designer Guillermo González López, showcasing human-centered design work and digital product experiences.",
+  "theme": "palm",
+  "primaryColor": "#ececec",
+  "lightColor": "#d4ff00",
+  "darkColor": "#0a0a0a",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/design-system",
+              "concepts/gamification"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/hero",
+              "components/navbar",
+              "components/projects",
+              "components/services",
+              "components/contact",
+              "components/about"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/customization",
+              "guides/styling",
+              "guides/deployment",
+              "guides/analytics"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Gamification",
+            "pages": [
+              "api/achievements",
+              "api/missions",
+              "api/triggers"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "api/ui-components",
+              "api/layout-components"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Next.js 16 with App Router",
+    "Responsive component library",
+    "Gamification system with achievements and missions",
+    "Project showcase carousel",
+    "Contact form integration",
+    "SEO and Open Graph optimization",
+    "Tailwind CSS design system",
+    "Analytics integration (Google Analytics, Hotjar, Vercel)"
+  ],
+  "publicApiSurface": [
+    "Navbar",
+    "Hero",
+    "ProjectsSection",
+    "ServicesAccordion",
+    "SectionAbout",
+    "Contact",
+    "GamificationBoot",
+    "AchievementsUI",
+    "MissionsBoot",
+    "ProjectCard",
+    "ContactCTA",
+    "Footer"
+  ]
+}
