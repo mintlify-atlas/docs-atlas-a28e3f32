@@ -1,0 +1,279 @@
+---
+title: Contact CTA Component
+description: Call-to-action section encouraging users to initiate contact
+---
+
+## Overview
+
+The ContactCTA component (exported as `FinalCTA`) is a prominent call-to-action section that appears near the end of the portfolio. It features an illustration, compelling copy, and a tracked contact button to drive conversions.
+
+## Location
+
+`~/workspace/source/components/ContactCTA.tsx`
+
+## Features
+
+- **Visual impact** - Illustration with glow effect and grid background
+- **Origin tracking** - Tracks which CTA prompted contact via `ContactLink`
+- **Responsive layout** - Stacks vertically on mobile, side-by-side on desktop
+- **Blueprint aesthetic** - Grid overlay and dashed border elements
+- **Hover animations** - Button includes arrow animation on hover
+
+## Component Structure
+
+```typescript
+import ContactCTA from '@/components/ContactCTA';
+
+<ContactCTA />
+```
+
+<Note>
+  The component is exported as `FinalCTA` but imported as `ContactCTA` in the main page. Both names refer to the same component.
+</Note>
+
+## Props
+
+This component takes no props - it's a self-contained section with hardcoded content.
+
+## Layout Structure
+
+From `ContactCTA.tsx:31-99`:
+
+```typescript
+<section id="cta" className="relative w-full bg-neutral-black-900 overflow-hidden">
+  {/* Background: glow + grid */}
+  <div className="pointer-events-none absolute inset-0">
+    {/* Radial glow effect */}
+    <div className="absolute -top-24 right-[-10%] h-[520px] w-[520px] rounded-full blur-[80px] opacity-25"
+      style={{
+        background: "radial-gradient(circle at 30% 30%, rgba(163,255,0,0.9), rgba(163,255,0,0) 60%)"
+      }}
+    />
+    
+    {/* Grid pattern */}
+    <div className="absolute inset-0 opacity-[0.06]"
+      style={{
+        backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
+        backgroundSize: "56px 56px"
+      }}
+    />
+  </div>
+  
+  {/* Content grid */}
+  <div className="grid items-center gap-10 md:grid-cols-[420px_1fr] lg:grid-cols-[520px_1fr]">
+    {/* Left: Illustration */}
+    <Image 
+      src="/brand/cta/cta-illustration.png"
+      alt=""
+      width={900}
+      height={900}
+    />
+    
+    {/* Right: Text + CTA */}
+    <div>
+      {/* Chip, heading, copy, button */}
+    </div>
+  </div>
+</section>
+```
+
+## Visual Elements
+
+### Status Chip
+
+```typescript
+<div className="inline-flex items-center gap-2 rounded-md border border-neutral-white/10 bg-neutral-black-900/30 px-4 py-2 text-[11px] tracking-[0.35em] text-neutral-white/70">
+  LISTO PARA CONSTRUIR
+  <span className="h-1 w-1 rounded-full bg-accent-lime/80" />
+</div>
+```
+
+- Includes animated dot indicator
+- High letter-spacing for emphasis
+- Semi-transparent background
+
+### Heading
+
+From `ContactCTA.tsx:56-58`:
+
+```typescript
+<h2 className="mt-5 heading-h2 tracking-tight text-left text-neutral-white">
+  ¿TE GUSTARÍA QUE TRABAJÁRAMOS JUNTOS?
+</h2>
+```
+
+### Blueprint Divider
+
+```typescript
+<div className="mt-4 h-px w-full max-w-[520px] mx-auto md:mx-0 bg-gradient-to-r from-neutral-white/0 via-neutral-white/20 to-neutral-white/0" />
+```
+
+## CTA Button
+
+The button uses the `ContactLink` component for tracking:
+
+```typescript
+<ContactLink
+  ctaId="cta-ready-to-build"
+  className="
+    group inline-flex items-center gap-3
+    rounded-md bg-accent-lime
+    px-8 py-3
+    text-[13px] font-semibold tracking-[0.22em]
+    text-black
+    shadow-[0_0_0_2px_rgba(0,0,0,0.25)]
+    hover:brightness-110
+    transition
+  "
+>
+  CONTACTAR
+  <span
+    aria-hidden
+    className="text-[16px] leading-none transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+  >
+    ↗
+  </span>
+</ContactLink>
+```
+
+### Hover Effect
+
+The arrow icon translates diagonally on hover:
+
+```css
+group-hover:translate-x-0.5 group-hover:-translate-y-0.5
+```
+
+## Secondary Copy
+
+```typescript
+<span className="text-[12px] tracking-[0.18em] text-neutral-white/45">
+  RESPUESTA EN 24–48H
+</span>
+```
+
+Provides reassurance about response time.
+
+## Responsive Behavior
+
+| Breakpoint | Layout | Illustration Size |
+|------------|--------|-------------------|
+| Mobile (`<768px`) | Stacked vertical | Full width |
+| Tablet (`768px+`) | Side-by-side, illustration left | 420px wide |
+| Desktop (`1024px+`) | Side-by-side | 520px wide |
+
+Grid definition:
+
+```typescript
+// Mobile: single column
+// Tablet: 420px illustration + flexible content
+// Desktop: 520px illustration + flexible content
+md:grid-cols-[420px_1fr] lg:grid-cols-[520px_1fr]
+```
+
+## Origin Tracking
+
+When the button is clicked, `ContactLink` stores the origin:
+
+```typescript
+sessionStorage.setItem('contact_origin', 'cta-ready-to-build');
+```
+
+This is later retrieved by the Contact form to track which CTA drove the submission.
+
+## Usage Example
+
+From `app/page.tsx:46`:
+
+```typescript
+import ContactCTA from '@/components/ContactCTA';
+
+export default function Home() {
+  return (
+    <main>
+      {/* Other sections */}
+      <SectionAbout />
+      <ContactCTA />
+      <FAQSection items={FAQS} />
+      {/* More sections */}
+    </main>
+  );
+}
+```
+
+<Tip>
+  Position the ContactCTA after showcasing portfolio work but before the FAQ section - this is when users have seen enough and are ready to reach out.
+</Tip>
+
+## Assets Required
+
+- `/brand/cta/cta-illustration.png` - Illustration image (900x900px recommended)
+
+<Warning>
+  The illustration is set to `priority={false}`, meaning it lazy-loads. Since it's below the fold, this improves initial page load performance.
+</Warning>
+
+## Customization
+
+### Changing the Copy
+
+Edit `ContactCTA.tsx` directly:
+
+```typescript
+// Chip text
+<div className="...">
+  YOUR CUSTOM CHIP TEXT
+</div>
+
+// Heading
+<h2 className="...">
+  YOUR CUSTOM HEADING
+</h2>
+
+// Subheading
+<p className="...">
+  Your custom subheading here...
+</p>
+
+// Response time
+<span className="...">
+  YOUR RESPONSE TIME
+</span>
+```
+
+### Changing the Illustration
+
+Replace `/public/brand/cta/cta-illustration.png` with your own image, or update the path in the component:
+
+```typescript
+<Image
+  src="/your/custom/path.png"
+  alt="Descriptive alt text"
+  width={900}
+  height={900}
+/>
+```
+
+### Adjusting the Glow Effect
+
+Modify the radial gradient:
+
+```typescript
+style={{
+  background: "radial-gradient(circle at 30% 30%, rgba(YOUR_R,YOUR_G,YOUR_B,0.9), rgba(YOUR_R,YOUR_G,YOUR_B,0) 60%)"
+}}
+```
+
+## Best Practices
+
+<Info>
+  The ContactCTA works best when placed after showcasing your work (projects, testimonials, etc.) so users have context before being asked to contact.
+</Info>
+
+<Tip>
+  Keep the copy action-oriented and personal. The current copy ("¿TE GUSTARÍA QUE TRABAJÁRAMOS JUNTOS?") directly addresses the user and implies collaboration.
+</Tip>
+
+<Note>
+  The `ctaId="cta-ready-to-build"` is important for analytics. If you add multiple CTA variations, use unique IDs to track which performs best.
+</Note>

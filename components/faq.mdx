@@ -1,0 +1,277 @@
+---
+title: FAQ Component
+description: Accordion-style frequently asked questions section
+---
+
+## Overview
+
+The FAQ component displays frequently asked questions in an accordion format, allowing users to expand and collapse individual questions. It supports custom styling and controlled/uncontrolled modes.
+
+## Location
+
+`~/workspace/source/components/Faq.tsx`
+
+## Features
+
+- **Accordion interaction** - One question open at a time
+- **Smooth animations** - Content slides in/out gracefully
+- **Data-driven** - Content from `faq.data.ts`
+- **Accessible** - ARIA attributes for screen readers
+- **Blueprint design** - Dashed dividers and subtle hover states
+
+## Component Structure
+
+```typescript
+import FAQSection from '@/components/Faq';
+import { FAQS } from '@/components/faq/faq.data';
+
+<FAQSection 
+  items={FAQS}
+  defaultOpenId="first-question"
+/>
+```
+
+## Props
+
+<ParamField path="items" type="FAQItem[]" required>
+  Array of FAQ items to display. Each item must have an `id`, `q` (question), and `a` (answer).
+</ParamField>
+
+<ParamField path="defaultOpenId" type="string">
+  The ID of the FAQ to open by default. If not provided, the first item opens automatically.
+</ParamField>
+
+## FAQItem Type
+
+```typescript
+type FAQItem = {
+  id: string;          // Unique identifier
+  q: string;           // Question text
+  a: string | string[]; // Answer (single paragraph or array)
+};
+```
+
+## Data Structure
+
+FAQ content is defined in `~/components/faq/faq.data.ts`:
+
+```typescript
+import type { FAQItem } from './faq.data';
+
+export const FAQS: FAQItem[] = [
+  {
+    id: 'what-services',
+    q: '¿Qué servicios ofreces?',
+    a: 'Diseño UX/UI completo: desde investigación y arquitectura de información hasta prototipos interactivos y diseño visual.'
+  },
+  {
+    id: 'how-long',
+    q: '¿Cuánto tiempo toma un proyecto?',
+    a: [
+      'Depende del alcance, pero en promedio:',
+      '• Landing page: 1-2 semanas',
+      '• MVP o app pequeña: 3-6 semanas',
+      '• Plataforma completa: 8-12 semanas'
+    ]
+  },
+  // ... more questions
+];
+```
+
+<Info>
+  Answers can be a single string for simple responses, or an array of strings for multi-paragraph or bulleted answers.
+</Info>
+
+## Interaction Logic
+
+From `Faq.tsx:15-19`:
+
+```typescript
+const [openId, setOpenId] = useState<string | null>(initial);
+
+const onToggle = (id: string) => {
+  setOpenId((curr) => (curr === id ? null : id));
+};
+```
+
+- Clicking an open question closes it
+- Clicking a closed question opens it and closes others
+- Only one question can be open at a time
+
+## Styling
+
+### Accordion Structure
+
+```typescript
+<ul className="divide-y divide-dashed divide-neutral-white/15">
+  {items.map((it) => (
+    <li key={it.id} className="py-8">
+      <button
+        type="button"
+        onClick={() => onToggle(it.id)}
+        aria-expanded={isOpen}
+        aria-controls={`faq-panel-${it.id}`}
+      >
+        {/* Question */}
+      </button>
+      
+      {isOpen && (
+        <div id={`faq-panel-${it.id}`}>
+          {/* Answer */}
+        </div>
+      )}
+    </li>
+  ))}
+</ul>
+```
+
+### Typography
+
+- **Question**: `text-[clamp(1rem,1.25vw,1.25rem)]` with semibold weight
+- **Answer**: `text-[14px] md:text-[15px]` with relaxed line-height
+- **Dividers**: Dashed borders at 15% opacity
+
+## Accessibility
+
+### ARIA Attributes
+
+```typescript
+<button
+  aria-expanded={isOpen}
+  aria-controls={`faq-panel-${it.id}`}
+>
+  {question}
+</button>
+
+<div 
+  id={`faq-panel-${it.id}`}
+  role="region"
+  aria-labelledby={`faq-button-${it.id}`}
+>
+  {answer}
+</div>
+```
+
+- `aria-expanded` indicates open/closed state
+- `aria-controls` links button to panel
+- Semantic `<button>` element for keyboard access
+
+## Usage Example
+
+From `app/page.tsx:47`:
+
+```typescript
+import FAQSection from '@/components/Faq';
+import { FAQS } from '@/components/faq/faq.data';
+
+export default function Home() {
+  return (
+    <main>
+      {/* Other sections */}
+      <FAQSection items={FAQS} />
+      {/* More sections */}
+    </main>
+  );
+}
+```
+
+## Customization
+
+### Adding New Questions
+
+Edit `~/components/faq/faq.data.ts`:
+
+```typescript
+export const FAQS: FAQItem[] = [
+  // ... existing questions
+  {
+    id: 'new-question',
+    q: '¿Nueva pregunta aquí?',
+    a: 'Respuesta detallada aquí...'
+  }
+];
+```
+
+### Multi-Paragraph Answers
+
+```typescript
+{
+  id: 'detailed-answer',
+  q: '¿Pregunta compleja?',
+  a: [
+    'Primer párrafo de la respuesta.',
+    'Segundo párrafo con más detalles.',
+    '• Punto 1',
+    '• Punto 2'
+  ]
+}
+```
+
+### Custom Default Open
+
+```typescript
+<FAQSection 
+  items={FAQS}
+  defaultOpenId="most-important-question"
+/>
+```
+
+## Responsive Behavior
+
+| Breakpoint | Padding | Question Font |
+|------------|---------|---------------|
+| Mobile | `px-6` | `clamp(1rem,1.25vw,1.25rem)` |
+| Tablet | `px-8` | Same |
+| Desktop | `px-12` | Same |
+| Large | `xl:px-32` | Same |
+
+## Animation Details
+
+The answer panel uses CSS transitions:
+
+```typescript
+<div 
+  className="mt-4 overflow-hidden transition-all duration-300"
+  style={{
+    maxHeight: isOpen ? '1000px' : '0',
+    opacity: isOpen ? 1 : 0
+  }}
+>
+  {/* Answer content */}
+</div>
+```
+
+## Best Practices
+
+<Tip>
+  Keep questions concise (1-2 lines) and answers focused. If an answer is getting long, consider splitting into multiple questions.
+</Tip>
+
+<Warning>
+  Avoid adding too many FAQs (>10) as users may not scroll through them all. Prioritize the most common questions.
+</Warning>
+
+<Info>
+  The component automatically opens the first question if no `defaultOpenId` is provided, giving users an immediate example of the interaction pattern.
+</Info>
+
+## SEO Considerations
+
+The FAQ section uses semantic HTML and can be enhanced with FAQ schema markup:
+
+```typescript
+// In SeoJsonLd.tsx or similar
+{
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué servicios ofreces?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Diseño UX/UI completo..."
+      }
+    }
+  ]
+}
+```

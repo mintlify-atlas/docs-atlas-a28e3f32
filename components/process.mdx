@@ -1,0 +1,246 @@
+---
+title: Process Component
+description: Scroll-driven timeline visualizing the design workflow
+---
+
+## Overview
+
+The Process component is an interactive scroll-driven timeline that showcases the design and development workflow. It uses sophisticated scroll animations to reveal process steps as the user navigates.
+
+## Location
+
+`~/workspace/source/components/Process.tsx`
+
+## Features
+
+- **Scroll-driven animations** - Steps reveal progressively based on scroll position
+- **Sticky positioning** - Cards stack and animate while scrolling
+- **Responsive layout** - Adapts from mobile to ultra-wide displays
+- **Blueprint aesthetic** - Grid background and dashed borders
+- **Data-driven** - Content loaded from `processStack.data.ts`
+
+## Component Structure
+
+```typescript
+import Process from '@/components/Process';
+import { PROCESS_STACK } from '@/components/process/processStack.data';
+
+<Process 
+  items={PROCESS_STACK}
+  title="ASÍ CONVIERTO UNA IDEA EN UNA EXPERIENCIA REAL"
+  className=""
+/>
+```
+
+## Props
+
+<ParamField path="items" type="ProcessCard[]">
+  Array of process steps to display. Defaults to `PROCESS_STACK` from data file.
+</ParamField>
+
+<ParamField path="title" type="string">
+  Section heading. Defaults to "ASÍ CONVIERTO UNA IDEA EN UNA EXPERIENCIA REAL".
+</ParamField>
+
+<ParamField path="className" type="string">
+  Additional CSS classes for the section.
+</ParamField>
+
+## ProcessCard Type
+
+```typescript
+type ProcessCard = {
+  id: string;
+  step: string;        // e.g., "01", "02"
+  title: string;       // Step name
+  desc: string;        // Description
+  tags?: string[];     // Optional tags/keywords
+  color?: string;      // Accent color for the card
+};
+```
+
+## Data Structure
+
+Process steps are defined in `~/components/process/processStack.data.ts`:
+
+```typescript
+export const PROCESS_STACK: ProcessCard[] = [
+  {
+    id: 'discover',
+    step: '01',
+    title: 'Descubrir',
+    desc: 'Entiendo tu negocio, tus usuarios y tus objetivos.',
+    tags: ['Research', 'Interviews', 'Analysis'],
+    color: '#00d4ff'
+  },
+  {
+    id: 'define',
+    step: '02',
+    title: 'Definir',
+    desc: 'Estructuro la información y establezco prioridades.',
+    tags: ['Strategy', 'IA', 'User Flows'],
+    color: '#d4ff00'
+  },
+  // ... more steps
+];
+```
+
+## Scroll Animation Mechanics
+
+The component uses sophisticated scroll tracking:
+
+### Viewport Tracking
+
+```typescript
+const [scrollY, setScrollY] = useState(0);
+
+useEffect(() => {
+  const handleScroll = () => {
+    if (!sectionRef.current) return;
+    const rect = sectionRef.current.getBoundingClientRect();
+    const progress = -rect.top / vh;
+    setScrollY(progress);
+  };
+  
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  return () => window.removeEventListener('scroll', handleScroll);
+}, [vh]);
+```
+
+### Card Reveal Logic
+
+From `Process.tsx:85-120`:
+
+```typescript
+const cardProgress = (index: number) => {
+  const startProgress = index * 0.15;
+  const endProgress = startProgress + 0.3;
+  
+  return clamp(
+    (scrollY - startProgress) / (endProgress - startProgress),
+    0,
+    1
+  );
+};
+
+const cardOpacity = easeOutExpo(cardProgress(index));
+const cardTransform = `translateY(${(1 - cardProgress(index)) * 40}px)`;
+```
+
+## Styling Details
+
+### Card Stacking Effect
+
+```typescript
+<div className="sticky top-[20vh] mb-8" style={{
+  transform: cardTransform,
+  opacity: cardOpacity,
+  zIndex: items.length - index
+}}>
+  {/* Card content */}
+</div>
+```
+
+### Blueprint Grid Background
+
+```typescript
+<div className="absolute inset-0 opacity-5">
+  <div 
+    className="h-full w-full" 
+    style={{
+      backgroundImage: `
+        linear-gradient(to right, #fff 1px, transparent 1px),
+        linear-gradient(to bottom, #fff 1px, transparent 1px)
+      `,
+      backgroundSize: '32px 32px'
+    }}
+  />
+</div>
+```
+
+## Responsive Behavior
+
+| Breakpoint | Layout | Card Width |
+|------------|--------|------------|
+| Mobile (`<768px`) | Single column, full width | 100% |
+| Tablet (`768px-1024px`) | Single column, constrained | max-w-2xl |
+| Desktop (`1024px+`) | Single column, centered | max-w-3xl |
+| Ultra-wide (`2560px+`) | Single column, max width | max-w-5xl |
+
+## Usage Example
+
+From `app/page.tsx:44`:
+
+```typescript
+import Process from '@/components/Process';
+
+export default function Home() {
+  return (
+    <main>
+      {/* Other sections */}
+      <Process />
+      {/* More sections */}
+    </main>
+  );
+}
+```
+
+## Performance Optimizations
+
+<Tip>
+  The scroll handler uses `passive: true` to improve scroll performance:
+  ```typescript
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  ```
+</Tip>
+
+<Info>
+  Layout measurements are cached in state to avoid recalculation on every scroll event.
+</Info>
+
+## Customization
+
+### Adding New Process Steps
+
+Edit `~/components/process/processStack.data.ts`:
+
+```typescript
+export const PROCESS_STACK: ProcessCard[] = [
+  // ... existing steps
+  {
+    id: 'launch',
+    step: '06',
+    title: 'Lanzar',
+    desc: 'Deploy and monitor the product in production.',
+    tags: ['Deployment', 'Monitoring', 'Support'],
+    color: '#ff00d4'
+  }
+];
+```
+
+### Adjusting Scroll Speed
+
+Modify the reveal timing in `Process.tsx`:
+
+```typescript
+// Slower reveals (more scroll needed per step)
+const startProgress = index * 0.25;  // Default: 0.15
+const endProgress = startProgress + 0.5;  // Default: 0.3
+```
+
+## Accessibility
+
+- Semantic section with `id="process"`
+- Step numbers provided for screen readers
+- Color not the only differentiator (text + icons)
+- Keyboard navigation supported through standard document flow
+
+## Best Practices
+
+<Warning>
+  Avoid adding too many steps (>8) as this extends the scroll distance significantly and can reduce engagement.
+</Warning>
+
+<Note>
+  The component measures viewport height on mount and resize. This ensures consistent behavior across different screen sizes.
+</Note>

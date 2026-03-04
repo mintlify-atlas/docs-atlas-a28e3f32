@@ -52,7 +52,10 @@
               "components/projects",
               "components/services",
               "components/contact",
-              "components/about"
+              "components/about",
+              "components/process",
+              "components/faq",
+              "components/contact-cta"
             ]
           },
           {
